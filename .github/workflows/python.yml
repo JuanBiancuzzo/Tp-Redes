@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version-python: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
     - uses: actions/checkout@v3
@@ -20,10 +20,10 @@ jobs:
     - name: Update
       run: sudo apt-get update
 
-    - name: Seteando Python ${{ matrix.version-python }}
+    - name: Seteando Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-      python-version: ${{ matrix.version-python }}
+      python-version: ${{ matrix.python-version }}
 
     - name: Instalar modulo unittest de Python
       run: python -m pip install --upgrade pip unittest
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version-python: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
     - uses: actions/checkout@v3
@@ -44,10 +44,10 @@ jobs:
     - name: Update
       run: sudo apt-get update
 
-    - name: Seteando Python ${{ matrix.version-python }}
+    - name: Seteando Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-      python-version: ${{ matrix.version-python }}
+      python-version: ${{ matrix.python-version }}
 
     - name: Instalar modulo unittest de Python
       run: python -m pip install --upgrade pip unittest
