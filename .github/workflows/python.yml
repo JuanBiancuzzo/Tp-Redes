@@ -1,0 +1,65 @@
+name: Correr pruebas unitarias y de integración
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-unitarios:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version-python: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Update
+      run: sudo apt-get update
+
+    - name: Seteando Python ${{ matrix.version-python }}
+      uses: actions/setup-python@v4
+      with:
+      python-version: ${{ matrix.version-python }}
+
+    - name: Instalar modulo unittest de Python
+      run: python -m pip install --upgrade pip unittest
+
+    - name: Correr tests unitarios
+      run: python3 tests/unit/main_test.py -v
+
+  test-integracion:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version-python: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Update
+      run: sudo apt-get update
+
+    - name: Seteando Python ${{ matrix.version-python }}
+      uses: actions/setup-python@v4
+      with:
+      python-version: ${{ matrix.version-python }}
+
+    - name: Instalar modulo unittest de Python
+      run: python -m pip install --upgrade pip unittest
+
+    - name: Instalar mininet
+      run: sudo apt-get install mininet
+
+    - name: Instalar modulo mininet de Python
+      run: python -m pip install --upgrade pip mininet
+
+    - name: Correr Open vSwitch 
+      run: sudo service openvswitch-switch start
+
+    - name: Correr tests unitarios
+      run: python3 tests/integration/main_test.py -v
