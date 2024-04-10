@@ -23,7 +23,7 @@ jobs:
     - name: Seteando Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-      python-version: ${{ matrix.python-version }}
+        python-version: ${{ matrix.python-version }}
 
     - name: Instalar modulo unittest de Python
       run: python -m pip install --upgrade pip unittest
@@ -47,7 +47,7 @@ jobs:
     - name: Seteando Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-      python-version: ${{ matrix.python-version }}
+        python-version: ${{ matrix.python-version }}
 
     - name: Instalar modulo unittest de Python
       run: python -m pip install --upgrade pip unittest
