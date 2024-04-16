@@ -34,10 +34,24 @@ def obtainParameters():
     )
 
     parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
-    parser.add_argument("-p", "--port", default="", dest="port", help="port port")
+    parser.add_argument("-p", "--port", default="", dest="port", type=int, help="server port")
 
     parser.add_argument("-s", "--src", default="", dest="filepath", help="source file path")
     parser.add_argument("-n", "--name", default="", dest="filename", help="name file name")
+
+    method = parser.add_mutually_exclusive_group(required = True)
+    method.add_argument(
+        "-w", "--stop-wait", 
+        action = "store_const", 
+        const = SendMethod.STOP_WAIT,
+        help = "stop and wait method"
+    )
+    method.add_argument(
+        "-r", "--selective-repeat", 
+        action = "store_const",
+        const = SendMethod.SELECTIVE_REPEAT,
+        help = "selective repeat method"
+    )
 
     args = parser.parse_args() # Sale completamente 
 
@@ -52,7 +66,8 @@ def obtainParameters():
         host = args.addr,
         port = args.port,
         filePath = args.filepath,
-        nameFile = args.filename
+        nameFile = args.filename,
+        method = method.selective_repeat if method.stop_wait is None else method.stop_wait
     )
 
 def main(parameter):

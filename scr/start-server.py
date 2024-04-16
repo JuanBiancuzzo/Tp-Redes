@@ -1,6 +1,6 @@
 import argparse
 
-from lib.parameter import ServerParameter, OutputVerbosity
+from lib.parameter import ServerParameter, OutputVerbosity, SendMethod
 
 class CustomHelpFormatter(argparse.HelpFormatter):
     def _format_action_invocation(self, action):
@@ -34,8 +34,22 @@ def obtainParameters():
     )
 
     parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
-    parser.add_argument("-p", "--port", default="", dest="port", help="port port")
+    parser.add_argument("-p", "--port", default="", dest="port", type=int, help="server port")
     parser.add_argument("-s", "--storage", default="", dest="dirpath", help="storage dir path")
+
+    method = parser.add_mutually_exclusive_group(required = True)
+    method.add_argument(
+        "-w", "--stop-wait", 
+        action = "store_const", 
+        const = SendMethod.STOP_WAIT,
+        help = "stop and wait method"
+    )
+    method.add_argument(
+        "-r", "--selective-repeat", 
+        action = "store_const",
+        const = SendMethod.SELECTIVE_REPEAT,
+        help = "selective repeat method"
+    )
 
     args = parser.parse_args() # Sale completamente 
 
@@ -50,6 +64,7 @@ def obtainParameters():
         host = args.addr,
         port = args.port,
         storagePath = args.storage,
+        method = method.selective_repeat if method.stop_wait is None else method.stop_wait
     )
 
 def main(parameter):
