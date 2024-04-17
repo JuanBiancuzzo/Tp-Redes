@@ -1,6 +1,6 @@
 import argparse
 
-from lib.parameter import ClientParameter, OutputVerbosity
+from lib.parameter import ClientParameter, OutputVerbosity, SendMethod
 
 class CustomHelpFormatter(argparse.HelpFormatter):
     def _format_action_invocation(self, action):
@@ -39,20 +39,19 @@ def obtainParameters():
     parser.add_argument("-d", "--dst", default="", dest="filepath", help="destination file path")
     parser.add_argument("-n", "--name", default="", dest="filename", help="name file name")
 
-    args = parser.parse_args() # Sale completamente 
-
-    method = parser.add_mutually_exclusive_group(required = True)
+    method = parser.add_mutually_exclusive_group()
+    method.add_argument(
+        "-r", "--select-repeat", 
+        action = "store_const",
+        const = SendMethod.SELECTIVE_REPEAT,
+        default = SendMethod.SELECTIVE_REPEAT,
+        help = "selective repeat method (default)"
+    )
     method.add_argument(
         "-w", "--stop-wait", 
         action = "store_const", 
         const = SendMethod.STOP_WAIT,
         help = "stop and wait method"
-    )
-    method.add_argument(
-        "-r", "--selective-repeat", 
-        action = "store_const",
-        const = SendMethod.SELECTIVE_REPEAT,
-        help = "selective repeat method"
     )
 
     args = parser.parse_args() # Sale completamente 
