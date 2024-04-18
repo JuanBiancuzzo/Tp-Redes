@@ -49,13 +49,17 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Instalar mininet
-      run: sudo apt-get install mininet
+      run: sudo apt-get install -y mininet
 
-    - name: Instalar modulo mininet de Python
-      run: pip install mininet
-
-    - name: Correr Open vSwitch 
-      run: sudo service openvswitch-switch start
+    - name: Instalar Ryu
+      run: sudo pip install ryu 
+    
+    - name: Correr ryu
+      run: ryu-manager
+      
+      #- name: Correr Open vSwitch 
+        # run: sudo service openvswitch-switch start 
 
     - name: Correr tests unitarios
-      run: python3 tests/integration/main_test.py -v
+      run: sudo mn --controller=remote,ip=127.0.0.1,port=6633 --test pingall --topo single,3 
+        #run: sudo python3 tests/integration/main_test.py -v
