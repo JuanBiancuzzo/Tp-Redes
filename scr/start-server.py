@@ -1,22 +1,12 @@
 import argparse
 
-from lib.parameter import ServerParameter, OutputVerbosity, SendMethod
-
-class CustomHelpFormatter(argparse.HelpFormatter):
-    def _format_action_invocation(self, action):
-        if action.option_strings:
-            parts = []
-            for option_string in action.option_strings:
-                parts.append(option_string)
-            return ', '.join(parts)
-        else:
-            return super()._format_action_invocation(action)
+from lib.parameter import ServerParameter, OutputVerbosity, SendMethod, CustomFormatter
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
         prog = "start-server", 
         description = "Default description",
-        formatter_class=CustomHelpFormatter,
+        formatter_class=CustomFormatter,
     )
 
     verbosity = parser.add_mutually_exclusive_group()
@@ -34,7 +24,7 @@ def obtainParameters():
     )
 
     parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
-    parser.add_argument("-p", "--port", default="", dest="port", type=int, help="server port")
+    parser.add_argument("-p", "--port", default=123123, dest="port", type=int, help="server port")
     parser.add_argument("-s", "--storage", default="", dest="dirpath", help="storage dir path")
 
     method = parser.add_mutually_exclusive_group()
@@ -64,8 +54,8 @@ def obtainParameters():
         outputVerbosity,
         host = args.addr,
         port = args.port,
-        storagePath = args.storage,
-        method = method.selective_repeat if method.stop_wait is None else method.stop_wait
+        storagePath = args.dirpath,
+        method = args.select_repeat if args.stop_wait is None else args.stop_wait
     )
 
 def main(parameter):
