@@ -1,23 +1,69 @@
-from socket import *
+import argparse
 
-class Servidor:
-    pass
+from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
 
-def main():
-    serverName = 'localhost'
-    serverPort = 12000
+def obtainParameters():
+    parser = argparse.ArgumentParser(
+        prog = "upload", 
+        description = "Default description",
+        formatter_class=CustomFormatter,
+    )
 
-    clientSocket = socket(AF_INET, SOCK_DGRAM)
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
+        "-v", "--verbose", 
+        action = "store_const", 
+        const = OutputVerbosity.VERBOSE,
+        help = "increase output verbosity"
+    )
+    verbosity.add_argument(
+        "-q", "--quite", 
+        action = "store_const",
+        const = OutputVerbosity.QUIET,
+        help = "decrease output verbosity"
+    )
 
-    print(clientSocket)
+    parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
+    parser.add_argument("-p", "--port", default=123123, dest="port", type=int, help="server port")
 
-    message = 'hola tanto tiempo'
-    clientSocket.sendto(message.encode(),(serverName, serverPort))
-    modifiedMessage, serverAddress = clientSocket.recvfrom(2048)
+    parser.add_argument("-s", "--src", default="", dest="filepath", help="source file path")
+    parser.add_argument("-n", "--name", default="", dest="filename", help="name file name")
 
-    print(modifiedMessage.decode())
+    method = parser.add_mutually_exclusive_group()
+    method.add_argument(
+        "-r", "--select-repeat", 
+        action = "store_const",
+        const = SendMethod.SELECTIVE_REPEAT,
+        default = SendMethod.SELECTIVE_REPEAT,
+        help = "selective repeat method (default)"
+    )
+    method.add_argument(
+        "-w", "--stop-wait", 
+        action = "store_const", 
+        const = SendMethod.STOP_WAIT,
+        help = "stop and wait method"
+    )
 
-    clientSocket.close()
+    args = parser.parse_args() # Sale completamente 
+
+    outputVerbosity = OutputVerbosity.NORMAL
+    if args.verbose is not None:
+        outputVerbosity = args.verbose
+    elif args.quite is not None:
+        outputVerbosity = args.quite
+
+    return ClientParameter(
+        outputVerbosity,
+        host = args.addr,
+        port = args.port,
+        filePath = args.filepath,
+        nameFile = args.filename,
+        method = args.select_repeat if args.stop_wait is None else args.stop_wait
+    )
+
+def main(parameter):
+    print(parameter)
 
 if __name__ == "__main__":
-    main()
+    parameter = obtainParameters()
+    main(parameter)
