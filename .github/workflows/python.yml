@@ -1,6 +1,7 @@
 name: Correr pruebas unitarias y de integración
 
 on:
+  workflow_dispatch: # Permite activarlo manualmente
   push:
     branches: [ "main" ]
   pull_request:
@@ -51,15 +52,12 @@ jobs:
     - name: Instalar mininet
       run: sudo apt-get install -y mininet
 
-    - name: Instalar Ryu
-      run: sudo pip install ryu 
-    
-    - name: Correr ryu
-      run: ryu-manager
+    - name: Correr OpenvSwitch
+      run: sudo /usr/share/openvswitch/scripts/ovs-ctl start
+        
+    - name: Check
+      run: sudo ovs-vsctl show
       
-      #- name: Correr Open vSwitch 
-        # run: sudo service openvswitch-switch start 
-
-    - name: Correr tests unitarios
-      run: sudo mn --controller=remote,ip=127.0.0.1,port=6633 --test pingall --topo single,3 
+    - name: Correr tests integracion
+      run: ssudo mn --test pingall -v debug 
         #run: sudo python3 tests/integration/main_test.py -v
