@@ -1,4 +1,5 @@
 import argparse
+from lib.server import Server
 
 from lib.parameter import ServerParameter, OutputVerbosity, SendMethod, CustomFormatter
 
@@ -59,8 +60,10 @@ def obtainParameters():
     )
 
 def main(parameter):
-    print(parameter)
+    #server = Server(parameter.host, parameter.port, parameter.storagePath)
+    server = Server("localhost", 8080, "")
+    server.listen()
 
 if __name__ == "__main__":
-    parameter = obtainParameters()
-    main(parameter)
+    #parameter = obtainParameters()
+    main(None)

@@ -1,5 +1,7 @@
 import struct
 
+HEADER_SIZE = 84
+
 class Header:
     def __init__(self, src_port, dst_port, seq_num, ack_num, data_len, flags):
         self.src_port = src_port
@@ -7,6 +9,7 @@ class Header:
         self.seq_num = seq_num
         self.ack_num = ack_num
         self.data_len = data_len
+        self.flags = flags
         self.syn = bool(flags & 0b1000)
         self.ack = bool(flags & 0b0100)
         self.fin = bool(flags & 0b0010)

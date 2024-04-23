@@ -1,22 +1,24 @@
 from socket import *
+import threading
+
+from lib.rdtp import RDTP
 
 class Server:
     def __init__(self, ip, port, dir):
-        self.ip = ip
-        self.port = port
-        self.dir = dir
-        
-        self.serverSocket = socket(AF_INET, SOCK_DGRAM)
-        self.serverSocket.bind((self.ip, self.port))
-
-        print(self.serverSocket)
-        print('El servidor está listo para recibir')
+        try:    
+            self.ip = ip
+            self.port = port
+            self.dir = dir
+            self.rdtp = RDTP()
+            self.rdtp.bind(ip, port)
+        except Exception as e:
+            raise e
 
     def listen(self):
         while True:
-            message, clientAddress = self.serverSocket.recvfrom(2048)
-            modifiedMessage = message.decode().upper()
-
-            print(modifiedMessage)
-
-            self.serverSocket.sendto(modifiedMessage.encode(), clientAddress)
+            try:
+                client_address = self.rdtp.accept()
+            except Exception as e:
+                print(e)
+            # if client_address is not None:
+            #     threading.Thread(target=self.rdtp.handle_client, args=(client_address)).start()

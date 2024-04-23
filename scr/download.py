@@ -1,4 +1,5 @@
 import argparse
+from lib.client import Client
 
 from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
 
@@ -62,8 +63,10 @@ def obtainParameters():
     )
 
 def main(parameter):
-    print(parameter)
+    #client = Client(parameter.host, parameter.port, parameter.filePath, parameter.nameFile)
+    client = Client("localhost", 8080)
+    client.download()
 
 if __name__ == "__main__":
-    parameter = obtainParameters()
-    main(parameter)
+    #parameter = obtainParameters()
+    main(None)
