@@ -9,16 +9,13 @@ class Server:
             self.ip = ip
             self.port = port
             self.dir = dir
-            self.rdtp = RDTP()
-            self.rdtp.bind(ip, port)
         except Exception as e:
             raise e
 
     def listen(self):
-        while True:
-            try:
-                client_address = self.rdtp.accept()
-            except Exception as e:
-                print(e)
-            # if client_address is not None:
-            #     threading.Thread(target=self.rdtp.handle_client, args=(client_address)).start()
+        try:
+            connection_with_client = RDTP.accept(self.ip, self.port)
+        except Exception as e:
+            print(e)
+        # if client_address is not None:
+        #     threading.Thread(target=self.rdtp.handle_client, args=(client_address)).start()

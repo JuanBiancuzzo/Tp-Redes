@@ -1,6 +1,6 @@
 import struct
 
-HEADER_SIZE = 84
+HEADER_SIZE = 15
 
 class Header:
     def __init__(self, src_port, dst_port, seq_num, ack_num, data_len, syn, ack, fin, new_port):

@@ -4,11 +4,8 @@ from lib.rdtp import RDTP
 
 class Client:
     def __init__(self, host, port):
-        try: 
-            self.host = host
-            self.port = port
-            self.rdtp = RDTP()
-            self.rdtp.connect(host, port)
+        try:
+            self.rdtp = RDTP.connect(host, port)
             print("conexion ok")
         except Exception as e:
             raise e
