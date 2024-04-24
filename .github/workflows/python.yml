@@ -52,12 +52,12 @@ jobs:
     - name: Instalar mininet
       run: sudo apt-get install -y mininet
 
-    - name: Correr OpenvSwitch
-      run: sudo /usr/share/openvswitch/scripts/ovs-ctl start
+    - name: Start OpenvSwith
+      run: sudo /etc/init.d/openvswitch-switch start
         
-    - name: Check
-      run: sudo ovs-vsctl show
+    - name: Check status
+      run: sudo /etc/init.d/openvswitch-switch status & sudo ovs-vsctl show
       
     - name: Correr tests integracion
-      run: ssudo mn --test pingall -v debug 
-        #run: sudo python3 tests/integration/main_test.py -v
+      run: sudo mn --test pingall --topo single,3
+        # run: sudo python3 tests/integration/main_test.py -v
