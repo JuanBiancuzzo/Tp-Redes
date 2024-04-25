@@ -18,7 +18,7 @@ class RDTP:
         try: 
             
             self.socket.sendto(syn_message.serialize(), (dest_ip, dest_port))
-            print("mande el syn")
+            print("mande el syn a ", dest_ip, ":", dest_port)
             
             message, server_address = self.socket.recvfrom(HEADER_SIZE)
             print("recibi el syn-ack")
@@ -58,7 +58,7 @@ class RDTP:
                 ack_number = header.seq_num + 1
                 dest_port = client_address[SRC_PORT_INDEX]
 
-                new_client_socket = socket(AF_INET, SOCK_STREAM)
+                new_client_socket = socket(AF_INET, SOCK_DGRAM)
                 new_client_socket.bind((ip, 0))
                 new_port = new_client_socket.getsockname()[SRC_PORT_INDEX]
                 
@@ -66,7 +66,7 @@ class RDTP:
                 self.socket.sendto(syn_ack_message.serialize(), client_address)
                 print("server: mande el syn-ack")
                 
-                message, client_address = self.socket.recvfrom(HEADER_SIZE)
+                message, client_address = new_client_socket.recvfrom(HEADER_SIZE)
                 print("server: recibi el ackack")
                 header = Header.deserialize(message)
                 

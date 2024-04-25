@@ -14,7 +14,8 @@ class Server:
 
     def listen(self):
         try:
-            connection_with_client = RDTP.accept(self.ip, self.port)
+            rdtp = RDTP()
+            connection_with_client = rdtp.accept(self.ip, self.port)
         except Exception as e:
             print(e)
         # if client_address is not None:

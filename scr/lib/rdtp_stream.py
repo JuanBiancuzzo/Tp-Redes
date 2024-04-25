@@ -1,5 +1,7 @@
 from socket import *
-from lib.rdtp import SRC_PORT_INDEX 
+
+SRC_PORT_INDEX = 1
+MAX_MSG = 2**16-8 #65528
 
 class RDTPStream:
     def __init__(self, socket, receiver_address, sequence_number, ack_number):
