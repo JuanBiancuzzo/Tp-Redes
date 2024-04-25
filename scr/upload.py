@@ -1,6 +1,7 @@
 import argparse
 
 from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
+from lib.rdtp import RDTP
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
@@ -62,6 +63,9 @@ def obtainParameters():
     )
 
 def main(parameter):
+    cliente = RDTP()
+    stream = cliente.connect("localhost", 8080)
+
     print(parameter)
 
 if __name__ == "__main__":
