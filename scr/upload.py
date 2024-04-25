@@ -62,6 +62,9 @@ def obtainParameters():
     )
 
 def main(parameter):
+    cliente = RDTP()
+    stream = cliente.connect("localhost", 1234)
+
     print(parameter)
 
 if __name__ == "__main__":

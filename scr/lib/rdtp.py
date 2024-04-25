@@ -1,56 +1,54 @@
 from socket import *
 from lib.protocol.header import Header, HEADER_SIZE
+from lib.rdtp_stream import RDTPStream
 import random
 
 SRC_PORT_INDEX = 1
 
 class RDTP:
-    def __init__(self, socket, receiver_address, sequence_number, ack_number):
-        self.socket = socket
-        self.receiver_address = receiver_address
-        self.sequence_number = sequence_number
-        self.ack_number = ack_number
+    def __init__(self):
+        self.socket = socket(AF_INET, SOCK_DGRAM)
     
     # Para el cliente
-    @classmethod
-    def connect(cls, dest_ip, dest_port):
-        server_socket = socket(AF_INET, SOCK_DGRAM)
-        src_port = server_socket.getsockname()[SRC_PORT_INDEX]
+    def connect(self, dest_ip, dest_port):
+        src_port = self.socket.getsockname()[SRC_PORT_INDEX]
         sequence_number = RDTP.generate_initial_sequence_number()
         syn_message = RDTP.craft_syn_message(src_port, dest_port, sequence_number)
         
         try: 
             
-            server_socket.sendto(syn_message.serialize(), (dest_ip, dest_port))
+            self.socket.sendto(syn_message.serialize(), (dest_ip, dest_port))
             print("mande el syn")
             
-            message, server_address = server_socket.recvfrom(HEADER_SIZE)
+            message, server_address = self.socket.recvfrom(HEADER_SIZE)
             print("recibi el syn-ack")
             
             header = Header.deserialize(message)
             ack_number = header.seq_num + 1
+
+            # Reescribiendo para nuevo puerto
+            server_address = (dest_ip, header.src_port)
+            dest_port = header.src_port
             
             if header.syn and header.ack:
                 
                 sequence_number += 1
                 ack_ack_message = RDTP.craft_ack_ack_message(src_port, dest_port, sequence_number, ack_number)
-                server_socket.sendto(ack_ack_message.serialize(), server_address)
+                self.socket.sendto(ack_ack_message.serialize(), server_address)
                 print("mande el ackack")
                 
-                return RDTP(server_socket, server_address, sequence_number, ack_number)
+                return RDTPStream(self.socket, server_address, sequence_number, ack_number)
                 
         except Exception as e:
             raise e
 
     # Para el servidor
-    @classmethod
-    def accept(cls, ip, port):
-        client_socket = socket(AF_INET, SOCK_DGRAM)
-        client_socket.bind((ip, port))
+    def accept(self, ip, port):
+        self.socket.bind((ip, port))
         
         try:
             
-            message, client_address = client_socket.recvfrom(HEADER_SIZE)
+            message, client_address = self.socket.recvfrom(HEADER_SIZE)
             print("server: recibi el syn")
             header = Header.deserialize(message)
             
@@ -59,17 +57,21 @@ class RDTP:
                 sequence_number = RDTP.generate_initial_sequence_number()
                 ack_number = header.seq_num + 1
                 dest_port = client_address[SRC_PORT_INDEX]
+
+                new_client_socket = socket(AF_INET, SOCK_STREAM)
+                new_client_socket.bind((ip, 0))
+                new_port = new_client_socket.getsockname()[SRC_PORT_INDEX]
                 
-                syn_ack_message = RDTP.craft_syn_ack_message(port, dest_port, sequence_number, ack_number)
-                client_socket.sendto(syn_ack_message.serialize(), client_address)
+                syn_ack_message = RDTP.craft_syn_ack_message(new_port, dest_port, sequence_number, ack_number)
+                self.socket.sendto(syn_ack_message.serialize(), client_address)
                 print("server: mande el syn-ack")
                 
-                message, client_address = client_socket.recvfrom(HEADER_SIZE)
+                message, client_address = self.socket.recvfrom(HEADER_SIZE)
                 print("server: recibi el ackack")
                 header = Header.deserialize(message)
                 
                 if header.ack:
-                    return RDTP(client_socket, client_address, sequence_number, ack_number)
+                    return RDTPStream(new_client_socket, client_address, sequence_number, ack_number)
                 
             return None
         except Exception as e:
@@ -86,9 +88,6 @@ class RDTP:
     @classmethod
     def craft_ack_ack_message(cls, src_port, dest_port, sequence_number, ack_number):
         return Header(src_port, dest_port, sequence_number, ack_number, 0, False, True, False, False)
-    
-    def get_src_port(self):
-        return self.socket.getsockname()[SRC_PORT_INDEX]
     
     @classmethod
     def generate_initial_sequence_number(cls):
