@@ -18,7 +18,7 @@ def obtainParameters():
         help = "increase output verbosity"
     )
     verbosity.add_argument(
-        "-q", "--quite", 
+        "-q", "--quiet", 
         action = "store_const",
         const = OutputVerbosity.QUIET,
         help = "decrease output verbosity"
