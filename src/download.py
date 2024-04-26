@@ -1,11 +1,11 @@
 import argparse
+from lib.client import Client
 
 from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
-from lib.rdtp import RDTP
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
-        prog = "upload", 
+        prog = "download", 
         description = "Default description",
         formatter_class=CustomFormatter,
     )
@@ -18,16 +18,16 @@ def obtainParameters():
         help = "increase output verbosity"
     )
     verbosity.add_argument(
-        "-q", "--quite", 
+        "-q", "--quiet", 
         action = "store_const",
         const = OutputVerbosity.QUIET,
         help = "decrease output verbosity"
     )
 
     parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
-    parser.add_argument("-p", "--port", default=123123, dest="port", type=int, help="server port")
+    parser.add_argument("-p", "--port", default=1234, dest="port", type=int, help="server port")
 
-    parser.add_argument("-s", "--src", default="", dest="filepath", help="source file path")
+    parser.add_argument("-d", "--dst", default="", dest="filepath", help="destination file path")
     parser.add_argument("-n", "--name", default="", dest="filename", help="name file name")
 
     method = parser.add_mutually_exclusive_group()
@@ -50,8 +50,8 @@ def obtainParameters():
     outputVerbosity = OutputVerbosity.NORMAL
     if args.verbose is not None:
         outputVerbosity = args.verbose
-    elif args.quite is not None:
-        outputVerbosity = args.quite
+    elif args.quiet is not None:
+        outputVerbosity = args.quiet
 
     return ClientParameter(
         outputVerbosity,
@@ -63,11 +63,10 @@ def obtainParameters():
     )
 
 def main(parameter):
-    cliente = RDTP()
-    stream = cliente.connect("localhost", 8080)
-
-    print(parameter)
+    #client = Client(parameter.host, parameter.port, parameter.filePath, parameter.nameFile)
+    client = Client("localhost", 8080)
+    client.download()
 
 if __name__ == "__main__":
-    parameter = obtainParameters()
-    main(parameter)
+    #parameter = obtainParameters()
+    main(None)

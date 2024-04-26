@@ -1,11 +1,12 @@
 import argparse
-from lib.client import Client
+from lib.server import Server
 
-from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
+from lib.parameter import ServerParameter, OutputVerbosity, SendMethod, CustomFormatter
+from lib.logger import Logger
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
-        prog = "download", 
+        prog = "start-server", 
         description = "Default description",
         formatter_class=CustomFormatter,
     )
@@ -18,17 +19,15 @@ def obtainParameters():
         help = "increase output verbosity"
     )
     verbosity.add_argument(
-        "-q", "--quite", 
+        "-q", "--quiet", 
         action = "store_const",
         const = OutputVerbosity.QUIET,
         help = "decrease output verbosity"
     )
 
     parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
-    parser.add_argument("-p", "--port", default=123123, dest="port", type=int, help="server port")
-
-    parser.add_argument("-d", "--dst", default="", dest="filepath", help="destination file path")
-    parser.add_argument("-n", "--name", default="", dest="filename", help="name file name")
+    parser.add_argument("-p", "--port", default=1234, dest="port", type=int, help="server port")
+    parser.add_argument("-s", "--storage", default="", dest="dirpath", help="storage dir path")
 
     method = parser.add_mutually_exclusive_group()
     method.add_argument(
@@ -50,23 +49,24 @@ def obtainParameters():
     outputVerbosity = OutputVerbosity.NORMAL
     if args.verbose is not None:
         outputVerbosity = args.verbose
-    elif args.quite is not None:
-        outputVerbosity = args.quite
+    elif args.quiet is not None:
+        outputVerbosity = args.quiet
 
-    return ClientParameter(
+    return ServerParameter(
         outputVerbosity,
         host = args.addr,
         port = args.port,
-        filePath = args.filepath,
-        nameFile = args.filename,
+        storagePath = args.dirpath,
         method = args.select_repeat if args.stop_wait is None else args.stop_wait
     )
 
 def main(parameter):
-    #client = Client(parameter.host, parameter.port, parameter.filePath, parameter.nameFile)
-    client = Client("localhost", 8080)
-    client.download()
+    #server = Server(parameter.host, parameter.port, parameter.storagePath)
+
+    logger = Logger(parameter.outputVerbosity)
+    server = Server("localhost", 8080, "", parameter.method, logger)
+    server.listen()
 
 if __name__ == "__main__":
-    #parameter = obtainParameters()
-    main(None)
+    parameter = obtainParameters()
+    main(parameter)

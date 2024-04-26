@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from enum import Enum
 
 class OutputVerbosity(Enum):
-    NORMAL = 1
-    VERBOSE = 2
-    QUIET = 3
+    QUIET = 1
+    NORMAL = 2
+    VERBOSE = 3
 
 class SendMethod(Enum):
     STOP_WAIT= 1
