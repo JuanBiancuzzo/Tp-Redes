@@ -12,9 +12,9 @@ class Server:
         except Exception as e:
             raise e
 
-    def listen(self):
+    def listen(self, method):
         try:
-            rdtp = RDTP()
+            rdtp = RDTP(method)
             connection_with_client = rdtp.accept(self.ip, self.port)
         except Exception as e:
             print(e)

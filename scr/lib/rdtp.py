@@ -6,8 +6,9 @@ import random
 SRC_PORT_INDEX = 1
 
 class RDTP:
-    def __init__(self):
+    def __init__(self, method):
         self.socket = socket(AF_INET, SOCK_DGRAM)
+        self.method = method
     
     # Para el cliente
     def connect(self, dest_ip, dest_port):
@@ -37,7 +38,7 @@ class RDTP:
                 self.socket.sendto(ack_ack_message.serialize(), server_address)
                 print("mande el ackack")
                 
-                return RDTPStream(self.socket, server_address, sequence_number, ack_number)
+                return RDTPStream(self.socket, server_address, sequence_number, ack_number, self.method)
                 
         except Exception as e:
             raise e
@@ -71,7 +72,7 @@ class RDTP:
                 header = Header.deserialize(message)
                 
                 if header.ack:
-                    return RDTPStream(new_client_socket, client_address, sequence_number, ack_number)
+                    return RDTPStream(new_client_socket, client_address, sequence_number, ack_number, self.method)
                 
             return None
         except Exception as e:

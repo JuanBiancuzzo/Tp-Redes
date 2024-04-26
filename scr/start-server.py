@@ -62,8 +62,8 @@ def obtainParameters():
 def main(parameter):
     #server = Server(parameter.host, parameter.port, parameter.storagePath)
     server = Server("localhost", 8080, "")
-    server.listen()
+    server.listen(parameter.method)
 
 if __name__ == "__main__":
-    #parameter = obtainParameters()
-    main(None)
+    parameter = obtainParameters()
+    main(parameter)

@@ -63,7 +63,7 @@ def obtainParameters():
     )
 
 def main(parameter):
-    cliente = RDTP()
+    cliente = RDTP(parameter.method)
     stream = cliente.connect("localhost", 8080)
 
     print(parameter)
