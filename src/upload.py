@@ -51,8 +51,8 @@ def obtainParameters():
     outputVerbosity = OutputVerbosity.NORMAL
     if args.verbose is not None:
         outputVerbosity = args.verbose
-    elif args.quite is not None:
-        outputVerbosity = args.quite
+    elif args.quiet is not None:
+        outputVerbosity = args.quiet
 
     return ClientParameter(
         outputVerbosity,
