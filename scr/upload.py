@@ -2,6 +2,7 @@ import argparse
 
 from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
 from lib.rdtp import RDTP
+from lib.logger import Logger
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
@@ -25,7 +26,7 @@ def obtainParameters():
     )
 
     parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
-    parser.add_argument("-p", "--port", default=123123, dest="port", type=int, help="server port")
+    parser.add_argument("-p", "--port", default=1234, dest="port", type=int, help="server port")
 
     parser.add_argument("-s", "--src", default="", dest="filepath", help="source file path")
     parser.add_argument("-n", "--name", default="", dest="filename", help="name file name")
@@ -63,7 +64,9 @@ def obtainParameters():
     )
 
 def main(parameter):
-    cliente = RDTP(parameter.method)
+    logger = Logger(parameter.outputVerbosity)
+
+    cliente = RDTP(parameter.method, logger)
     stream = cliente.connect("localhost", 8080)
 
     print(parameter)

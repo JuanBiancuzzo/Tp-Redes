@@ -25,7 +25,7 @@ def obtainParameters():
     )
 
     parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
-    parser.add_argument("-p", "--port", default=123123, dest="port", type=int, help="server port")
+    parser.add_argument("-p", "--port", default=1234, dest="port", type=int, help="server port")
 
     parser.add_argument("-d", "--dst", default="", dest="filepath", help="destination file path")
     parser.add_argument("-n", "--name", default="", dest="filename", help="name file name")

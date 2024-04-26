@@ -2,6 +2,7 @@ import argparse
 from lib.server import Server
 
 from lib.parameter import ServerParameter, OutputVerbosity, SendMethod, CustomFormatter
+from lib.logger import Logger
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
@@ -25,7 +26,7 @@ def obtainParameters():
     )
 
     parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
-    parser.add_argument("-p", "--port", default=123123, dest="port", type=int, help="server port")
+    parser.add_argument("-p", "--port", default=1234, dest="port", type=int, help="server port")
     parser.add_argument("-s", "--storage", default="", dest="dirpath", help="storage dir path")
 
     method = parser.add_mutually_exclusive_group()
@@ -61,8 +62,10 @@ def obtainParameters():
 
 def main(parameter):
     #server = Server(parameter.host, parameter.port, parameter.storagePath)
-    server = Server("localhost", 8080, "")
-    server.listen(parameter.method)
+
+    logger = Logger(parameter.outputVerbosity)
+    server = Server("localhost", 8080, "", parameter.method, logger)
+    server.listen()
 
 if __name__ == "__main__":
     parameter = obtainParameters()
