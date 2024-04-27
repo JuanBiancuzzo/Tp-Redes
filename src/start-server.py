@@ -1,4 +1,5 @@
 import argparse
+import threading
 from lib.server import Server
 
 from lib.parameter import ServerParameter, OutputVerbosity, SendMethod, CustomFormatter
@@ -61,11 +62,23 @@ def obtainParameters():
     )
 
 def main(parameter):
-    #server = Server(parameter.host, parameter.port, parameter.storagePath)
-
     logger = Logger(parameter.outputVerbosity)
-    server = Server("localhost", 8080, "", parameter.method, logger)
-    server.listen()
+
+    server = Server(
+        parameter.method,
+        logger,
+        parameter.host, 
+        parameter.port, 
+        parameter.storagePath
+    )
+
+    while True:
+        new_connection = server.listen()
+
+        threading.Thread(
+                target = server.handleClient,
+                args = (new_connection)
+        ).start()
 
 if __name__ == "__main__":
     parameter = obtainParameters()
