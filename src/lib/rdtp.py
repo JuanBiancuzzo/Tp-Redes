@@ -44,7 +44,7 @@ class RDTP:
             self.logger.log(OutputVerbosity.VERBOSE, "mande el ackack")
 
             self.logger.log(OutputVerbosity.QUIET, "hola")
-            return RDTPStream(self.socket, server_address, sequence_number, ack_number, self.method, self.logger)
+            return RDTPStream(self.socket, server_address, sequence_number + 1, ack_number, self.method, self.logger)
 
         else:
             raise ProtocolError.ERROR_NO_SYNACK
@@ -79,7 +79,7 @@ class RDTP:
                 header = Header.deserialize(message)
                 
                 if header.ack:
-                    return RDTPStream(new_client_socket, client_address, sequence_number, ack_number, self.method, self.logger)
+                    return RDTPStream(new_client_socket, client_address, sequence_number + 1, ack_number, self.method, self.logger)
                 
             return None
         except Exception as e:
