@@ -14,6 +14,6 @@ class RDTPSegment:
         return cls(header, data[HEADER_SIZE:])
     
     @classmethod
-    def create_new_message(cls, src_port, dst_port, seq_num, ack_num, bytes):
-        header = Header(src_port, dst_port, seq_num, ack_num, len(bytes), False, True, False, False)
+    def create_new_message(cls, src_port, dst_port, seq_num, ack_num, is_last, bytes):
+        header = Header(src_port, dst_port, seq_num, ack_num, len(bytes), False, True, False, is_last)
         return cls(header, bytes)
