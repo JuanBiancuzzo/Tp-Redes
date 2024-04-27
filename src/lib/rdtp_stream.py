@@ -21,5 +21,8 @@ class RDTPStream:
     def recv(self, size: int) -> bytes:
         pass
 
+    def close(self):
+        pass
+
     def get_src_port(self):
         return self.socket.getsockname()[SRC_PORT_INDEX]

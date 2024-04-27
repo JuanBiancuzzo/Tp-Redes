@@ -1,6 +1,14 @@
 from socket import *
+import struct 
 
 from lib.rdtp import RDTP
+from lib.protocol.header_package import HeaderPackage, HEADER_SIZE
+from lib.parameter import ActionMethod
+
+FILE_SIZE_SIZE = 8
+FORMAT = '>Q'
+
+FILE_SPLIT = 2**28 # 250 Mbytes 
 
 class Server:
     def __init__(self, method, logger, ip, port, dir):
@@ -14,5 +22,33 @@ class Server:
     def listen(self):
         return self.rdtp.accept(self.ip, self.port)
 
-    def handleClient(self, connection):
+    def handleUpload(self, connection, file):
+        message = connection.recv(FILE_SIZE_SIZE)
+        fileSize = struct.unpack(FORMAT, message)
+
+        split = min(FILE_SPLIT, fileSize)
+        while fileSize > 0:
+            message = connection.recv(split)
+
+            file.write(message)
+
+            fileSize -= split
+            split = min(FILE_SPLIT, fileSize)
+
+    def handleDownload(self, connection, fileName, filePath):
         pass
+
+    def handleClient(self, connection):
+        message = connection.recv(HEADER_SIZE)
+        action, fileNameSize, filePathSize = HeaderPackage.getSize(message)
+
+        message = connection.recv(fileNameSize + filePathSize)
+        package = HeaderPackage.deserialize(message, action, fileNameSize)
+
+        if package.action == ActionMethod.UPLOAD:
+            with open(f"{self.dir}/{package.filePath}/{packagefileName}", "wb") as file:
+                handleUpload(connection, file)
+        else:
+            handleDownload(connection, package.fileName, package.filePath)
+
+        connection.close()
