@@ -3,18 +3,12 @@ import socket
 from lib.rdtp import RDTP
 
 class Client:
-    def __init__(self, host, port):
-        try:
-            self.rdtp = RDTP.connect(host, port)
-            print("conexion ok")
-        except Exception as e:
-            raise e
+    def __init__(self, metodo, logger, host, port):
+        client = RDTP(metodo, logger)
+        self.stream = client.connect(host, port)
     
     def download(self, filename, filepath):
-        try:
-            print("Downloading file")
-        except Exception as e:
-            raise e
+        pass
     
     def upload(self, filename, filepath):
-        return
+        pass

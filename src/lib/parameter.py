@@ -17,7 +17,7 @@ class ClientParameter:
     host: str
     port: int
     filePath: str
-    nameFile: str
+    fileName: str
     method: SendMethod
 
 @dataclass
