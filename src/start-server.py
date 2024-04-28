@@ -63,6 +63,7 @@ def obtainParameters():
 
 def main(parameter):
     logger = Logger(parameter.outputVerbosity)
+    logger.log(OutputVerbosity.VERBOSE, "Initializing server")
 
     server = Server(
         parameter.method,
@@ -72,6 +73,7 @@ def main(parameter):
         parameter.storagePath
     )
 
+    logger.log(OutputVerbosity.QUIET, "Listening for connections")
     while True:
         new_connection = server.listen()
 
@@ -79,6 +81,8 @@ def main(parameter):
                 target = server.handleClient,
                 args = (new_connection)
         ).start()
+
+        logger.log(OutputVerbosity.NORMAL, "New connection established")
 
 if __name__ == "__main__":
     parameter = obtainParameters()

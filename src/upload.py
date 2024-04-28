@@ -66,6 +66,7 @@ def obtainParameters():
 
 def main(parameter):
     logger = Logger(parameter.outputVerbosity)
+    logger.log(OutputVerbosity.VERBOSE, "Initializing client upload")
 
     client = Client(
         parameter.method,
@@ -74,6 +75,7 @@ def main(parameter):
         parameter.port
     )
 
+    logger.log(OutputVerbosity.QUIET, "Connection established with server")
     client.upload(parameter.fileName, parameter.filePath)
 
 if __name__ == "__main__":
