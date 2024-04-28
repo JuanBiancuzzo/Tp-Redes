@@ -1,4 +1,5 @@
 from socket import *
+import os
 import struct 
 
 from lib.rdtp import RDTP
@@ -29,6 +30,13 @@ class Server:
         self.ip = ip
         self.port = port
         self.dir = dir
+
+        # Creando el directorio
+        try:
+            os.mkdir(os.path.join(os.getcwd(), dir))
+        except:
+            pass
+            
 
         self.rdtp = RDTP(method, logger)
         self.logger = logger
@@ -79,10 +87,10 @@ class Server:
 
     def handleClient(self, connection):
         self.logger.log(OutputVerbosity.VERBOSE, "Waiting for package with method settings")
-        message = connection.recv(HEADER_SIZE)
-        action, fileNameSize, filePathSize = HeaderPackage.getSize(message)
 
         message = connection.recv(HEADER_SIZE)
+        (action, fileNameSize, filePathSize) = HeaderPackage.getSize(message)
+
         message = connection.recv(fileNameSize + filePathSize)
         package = HeaderPackage.deserialize(message, action, fileNameSize)
 
@@ -92,13 +100,19 @@ class Server:
         if package.action == ActionMethod.UPLOAD:
             self.logger.log(OutputVerbosity.NORMAL, f"Receiving file: {package.fileName}\n\tSaving it at: {package.filePath}")
 
+            # Creando el directorio
+            try:
+                os.mkdir(os.path.join(os.getcwd(), f"{self.dir}/{package.filePath}"))
+            except:
+                pass
+
             with open(f"{self.dir}/{package.filePath}/{package.fileName}", "wb") as file:
                 Server.handleUpload(connection, file, self.logger)
         else:
             self.logger.log(OutputVerbosity.NORMAL, f"Sending file: {package.fileName}\n\tFrom: {package.filePath}")
-            fileSize = os.path.getsize(f"{filepath}/{filename}")
+            fileSize = os.path.getsize(f"{self.dir}/{package.filePath}/{package.fileName}")
 
-            with open(f"{filepath}/{filename}", "rb") as file:
+            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "rb") as file:
                 Server.handleDownload(connection, file, fileSize, self.logger)
 
         self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")

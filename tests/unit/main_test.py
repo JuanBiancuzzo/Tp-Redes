@@ -142,8 +142,8 @@ class TestUpload(unittest.TestCase):
 
         infoPackage = HeaderPackage.deserialize(data, action, fileNameSize)
 
-        self.assertEqual(infoPackage.fileName, filename.encode(encoding="UTF-8"))
-        self.assertEqual(infoPackage.filePath, filepath.encode(encoding="UTF-8"))
+        self.assertEqual(infoPackage.fileName, filename)
+        self.assertEqual(infoPackage.filePath, filepath)
 
 class TestDownload(unittest.TestCase):
 

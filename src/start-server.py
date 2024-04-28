@@ -61,6 +61,9 @@ def obtainParameters():
         method = args.select_repeat if args.stop_wait is None else args.stop_wait
     )
 
+def handleClient(server, connection):
+    server.handleClient(connection)
+
 def main(parameter):
     logger = Logger(parameter.outputVerbosity)
     logger.log(OutputVerbosity.VERBOSE, "Initializing server")
@@ -78,8 +81,8 @@ def main(parameter):
         new_connection = server.listen()
 
         threading.Thread(
-                target = server.handleClient,
-                args = (new_connection)
+            target = handleClient,
+            args = (server, new_connection)
         ).start()
 
         logger.log(OutputVerbosity.NORMAL, "New connection established")

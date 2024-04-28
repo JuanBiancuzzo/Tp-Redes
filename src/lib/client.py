@@ -114,6 +114,12 @@ class Client:
 
         self.logger.log(OutputVerbosity.NORMAL, f"Receiving file: {filename}\n\tFrom: {filepath}")
 
+        # Creando el directorio
+        try:
+            os.mkdir(os.path.join(os.getcwd(), filepath))
+        except:
+            pass
+
         with open(f"{filepath}/{filename}", "wb") as file:
             Client.downloadFile(self.stream, file, self.logger)
 
