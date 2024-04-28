@@ -79,5 +79,5 @@ def main(parameter):
     client.download(parameter.fileName, parameter.filePath)
 
 if __name__ == "__main__":
-    #parameter = obtainParameters()
-    main(None)
+    parameter = obtainParameters()
+    main(parameter)
