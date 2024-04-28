@@ -49,7 +49,7 @@ class Server:
         package = HeaderPackage.deserialize(message, action, fileNameSize)
 
         if package.action == ActionMethod.UPLOAD:
-            with open(f"{self.dir}/{package.filePath}/{packagefileName}", "wb") as file:
+            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "wb") as file:
                 Self.handleUpload(connection, file, self.logger)
         else:
             Self.handleDownload(connection, package.fileName, package.filePath, self.logger)

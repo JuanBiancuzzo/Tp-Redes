@@ -37,10 +37,16 @@ class Client:
             split = min(FILE_SPLIT, fileSize)
     
     def upload(self, filename, filepath):
-        fileSize = os.path.getsize(f"{filePath}/{fileName}")
-        Self.sendInfoPackage(self.stream, ActionMethod.UPLOAD, filename, filepath, self.logger)
+        fileSize = os.path.getsize(f"{filepath}/{filename}")
+        Self.sendInfoPackage(
+            self.stream,
+            ActionMethod.UPLOAD,
+            filename,
+            filepath,
+            self.logger
+        )
 
-        with open(f"{filePath}/{fileName}", "rb") as file:
+        with open(f"{filepath}/{filename}", "rb") as file:
             Self.uploadFile(self.stream, file, fileSize, self.logger)
 
         self.stream.close()
