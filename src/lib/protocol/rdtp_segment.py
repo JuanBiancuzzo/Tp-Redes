@@ -1,4 +1,4 @@
-from header import Header, HEADER_SIZE
+from lib.protocol.header import Header, HEADER_SIZE
 
 class RDTPSegment:
     def __init__(self, header, bytes):

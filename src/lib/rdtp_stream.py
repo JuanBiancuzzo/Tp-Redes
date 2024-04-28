@@ -38,6 +38,7 @@ class RDTPStream:
             self.send_selective_repeat(message)
             
     def recv(self, size: int) -> bytes:
+        print("entre al recv con método", self.method)
         if self.method == SendMethod.STOP_WAIT:
             return self.recv_stop_wait(size)
         else:
@@ -47,6 +48,7 @@ class RDTPStream:
         self.socket.settimeout(TIMEOUT)
         
         num_segments = ceil(len(message) / MAX_PAYLOAD)
+        print("num_segments", num_segments)
         
         if num_segments <= 0:
             #raise error
@@ -63,9 +65,9 @@ class RDTPStream:
            
             while True:
                 try:
-                    self.logger(OutputVerbosity.VERBOSE, f"esperando ack del segmento {segment.header.seq_num}")
-                    message, _ = self.socket.recvfrom(MAX_MSG)
-                    ack_message = RDTPSegment.deserialize(message)
+                    self.logger.log(OutputVerbosity.VERBOSE, f"esperando ack del segmento {segment.header.seq_num}")
+                    answer, _ = self.socket.recvfrom(MAX_MSG)
+                    ack_message = RDTPSegment.deserialize(answer)
                     if ack_message.header.ack_num == self.sequence_number:
                         self.logger.log(OutputVerbosity.VERBOSE, f"recibi el ack {ack_message.header.ack_num}")
                         break
@@ -77,6 +79,8 @@ class RDTPStream:
                     self.logger.log(OutputVerbosity.VERBOSE, f"timeout, reenviando el segmento {segment.header.seq_num}")
                     self.socket.sendto(segment.serialize(), self.receiver_address)
                     continue
+        
+        self.logger.log(OutputVerbosity.VERBOSE, "termine de mandar los segmentos")
 
     def recv_stop_wait(self, size: int) -> bytes:
         received_message = bytearray()
@@ -101,6 +105,7 @@ class RDTPStream:
                 repeated_ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
                 self.logger.log(OutputVerbosity.VERBOSE, f"Me mandaron un mensaje con seq number equivocado. Mande el ack {repeated_ack_message.header.ack_num}")
                 
+        self.logger.log(OutputVerbosity.VERBOSE, "termine de recibir los segmentos")
         return received_message
     
     def send_selective_repeat(self, message: bytes):
