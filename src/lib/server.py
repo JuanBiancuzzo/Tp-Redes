@@ -3,7 +3,7 @@ import struct
 
 from lib.rdtp import RDTP
 from lib.protocol.header_package import HeaderPackage, HEADER_SIZE
-from lib.parameter import ActionMethod
+from lib.parameter import ActionMethod, OutputVerbosity
 from lib.logger import Logger
 
 FILE_SIZE_SIZE = 8
@@ -13,10 +13,10 @@ FILE_SPLIT = 2**28 # 250 Mbytes
 
 def calculateSizeString(numBytes):
     if numBytes < 2**10:
-        string = f"{split} bytes"
-    else if numBytes < 2**20:
+        string = f"{numBytes} bytes"
+    elif numBytes < 2**20:
         string = f"{'{:.2f}'.format(numBytes / 2**10)} Kb"
-    else if numBytes < 2**30:
+    elif numBytes < 2**30:
         string = f"{'{:.2f}'.format(numBytes / 2**20)} Mb"
     else:
         string = f"{'{:.2f}'.format(numBytes / 2**30)} Gb"
