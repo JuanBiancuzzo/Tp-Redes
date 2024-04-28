@@ -70,10 +70,12 @@ class RDTPStream:
                         self.logger.log(OutputVerbosity.VERBOSE, f"recibi el ack {ack_message.header.ack_num}")
                         break
                     else:
-                        self.logger.log(OutputVerbosity.VERBOSE, f"ack incorrecto, esperaba {self.sequence_number} pero recibi {ack_message.header.ack_num}")
+                        self.logger.log(OutputVerbosity.VERBOSE, f"ack incorrecto, esperaba {self.sequence_number} pero recibi {ack_message.header.ack_num}. Reenvío el segmento {segment.header.seq_num}")
+                        self.socket.sendto(segment.serialize(), self.receiver_address)
                         continue
                 except timeout:
                     self.logger.log(OutputVerbosity.VERBOSE, f"timeout, reenviando el segmento {segment.header.seq_num}")
+                    self.socket.sendto(segment.serialize(), self.receiver_address)
                     continue
 
     def recv_stop_wait(self, size: int) -> bytes:
@@ -97,7 +99,8 @@ class RDTPStream:
             else:
                 self.logger.log(OutputVerbosity.VERBOSE, f"segmento incorrecto, esperaba {self.ack_number} pero recibi {segment.header.seq_num}")
                 repeated_ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
-        
+                self.logger.log(OutputVerbosity.VERBOSE, f"Me mandaron un mensaje con seq number equivocado. Mande el ack {repeated_ack_message.header.ack_num}")
+                
         return received_message
     
     def send_selective_repeat(self, message: bytes):
