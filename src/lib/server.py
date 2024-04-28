@@ -50,8 +50,8 @@ class Server:
 
         if package.action == ActionMethod.UPLOAD:
             with open(f"{self.dir}/{package.filePath}/{packagefileName}", "wb") as file:
-                handleUpload(connection, file, self.logger)
+                Self.handleUpload(connection, file, self.logger)
         else:
-            handleDownload(connection, package.fileName, package.filePath, self.logger)
+            Self.handleDownload(connection, package.fileName, package.filePath, self.logger)
 
         connection.close()

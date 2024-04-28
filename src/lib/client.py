@@ -13,28 +13,35 @@ class Client:
     def __init__(self, method, logger, host, port):
         client = RDTP(method, logger)
         self.stream = client.connect(host, port)
-    
-    def upload(self, filename, filepath):
+
+    @classmethod
+    def sendInfoPackage(cls, connection, action, filename, filepath, logger):
         infoPackage = HeaderPackage(
-                ActionMethod.UPLOAD,
+                action,
                 filename,
                 filepath
         )
 
-        self.stream.send(infoPackage.serialize())
+        connection.send(infoPackage.serialize())
 
+    @classmethod
+    def uploadFile(cls, connection, file, fileSize, logger):
+        connection.send(struct.pack(FORMAT, fileSize))
+        split = min(FILE_SPLIT, fileSize)
+
+        while fileSize > 0:
+            message = file.read(split)
+            connection.send(message)
+
+            fileSize -= split
+            split = min(FILE_SPLIT, fileSize)
+    
+    def upload(self, filename, filepath):
         fileSize = os.path.getsize(f"{filePath}/{fileName}")
-        self.stream.send(struct.pack(FORMAT, fileSize))
+        Self.sendInfoPackage(self.stream, ActionMethod.UPLOAD, filename, filepath, self.logger)
 
         with open(f"{filePath}/{fileName}", "rb") as file:
-            split = min(FILE_SPLIT, fileSize)
-
-            while fileSize > 0:
-                message = file.read(split)
-                self.stream.send(message)
-
-                fileSize -= split
-                split = min(FILE_SPLIT, fileSize)
+            Self.uploadFile(self.stream, file, fileSize, self.logger)
 
         self.stream.close()
 

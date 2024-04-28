@@ -20,8 +20,7 @@ class HeaderPackage:
             self.action.value,
             fileNameSize,
             filePathSize
-        ) + self.fileName.encode(encoding="UTF-8") 
-        + self.filePath.encode(encoding="UTF-8") 
+        ) + self.fileName.encode(encoding="UTF-8") + self.filePath.encode(encoding="UTF-8") 
 
     @classmethod
     def getSize(cls, data):
@@ -37,9 +36,9 @@ class HeaderPackage:
     @classmethod
     def deserialize(cls, data, action, fileNameSize):
         fileName = data[:fileNameSize]
-        filePath = data[fileNameSize + 1:]
+        filePath = data[fileNameSize:]
 
-        HeaderPackage(
+        return HeaderPackage(
             action,
             fileName,
             filePath
