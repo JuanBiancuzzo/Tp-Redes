@@ -1,4 +1,5 @@
 import struct
+from dataclasses import dataclass
 from lib.parameter import ActionMethod
 
 FORMAT = '>BII'

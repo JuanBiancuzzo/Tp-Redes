@@ -4,6 +4,7 @@ import struct
 from lib.rdtp import RDTP
 from lib.protocol.header_package import HeaderPackage, HEADER_SIZE
 from lib.parameter import ActionMethod
+from lib.logger import Logger
 
 FILE_SIZE_SIZE = 8
 FORMAT = '>Q'
@@ -22,9 +23,10 @@ class Server:
     def listen(self):
         return self.rdtp.accept(self.ip, self.port)
 
-    def handleUpload(self, connection, file):
+    @classmethod
+    def handleUpload(cls, connection, file, logger):
         message = connection.recv(FILE_SIZE_SIZE)
-        fileSize = struct.unpack(FORMAT, message)
+        fileSize = struct.unpack(FORMAT, message)[0]
 
         split = min(FILE_SPLIT, fileSize)
         while fileSize > 0:
@@ -35,7 +37,8 @@ class Server:
             fileSize -= split
             split = min(FILE_SPLIT, fileSize)
 
-    def handleDownload(self, connection, fileName, filePath):
+    @classmethod
+    def handleDownload(cls, connection, fileName, filePath, logger):
         pass
 
     def handleClient(self, connection):
@@ -47,8 +50,8 @@ class Server:
 
         if package.action == ActionMethod.UPLOAD:
             with open(f"{self.dir}/{package.filePath}/{packagefileName}", "wb") as file:
-                handleUpload(connection, file)
+                handleUpload(connection, file, self.logger)
         else:
-            handleDownload(connection, package.fileName, package.filePath)
+            handleDownload(connection, package.fileName, package.filePath, self.logger)
 
         connection.close()
