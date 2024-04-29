@@ -4,6 +4,7 @@ from lib.parameter import ActionMethod
 
 FORMAT = '>BII'
 HEADER_SIZE = 9
+ENCODING = "UTF-8"
 
 @dataclass
 class HeaderPackage:
@@ -20,7 +21,7 @@ class HeaderPackage:
             self.action.value,
             fileNameSize,
             filePathSize
-        ) + self.fileName.encode(encoding="UTF-8") + self.filePath.encode(encoding="UTF-8") 
+        ) + self.fileName.encode(encoding=ENCODING) + self.filePath.encode(encoding=ENCODING) 
 
     @classmethod
     def getSize(cls, data):
@@ -35,8 +36,8 @@ class HeaderPackage:
 
     @classmethod
     def deserialize(cls, data, action, fileNameSize):
-        fileName = data[:fileNameSize]
-        filePath = data[fileNameSize:]
+        fileName = data[:fileNameSize].decode(encoding=ENCODING)
+        filePath = data[fileNameSize:].decode(encoding=ENCODING)
 
         return HeaderPackage(
             action,

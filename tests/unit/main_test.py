@@ -142,8 +142,78 @@ class TestUpload(unittest.TestCase):
 
         infoPackage = HeaderPackage.deserialize(data, action, fileNameSize)
 
-        self.assertEqual(infoPackage.fileName, filename.encode(encoding="UTF-8"))
-        self.assertEqual(infoPackage.filePath, filepath.encode(encoding="UTF-8"))
+        self.assertEqual(infoPackage.fileName, filename)
+        self.assertEqual(infoPackage.filePath, filepath)
+
+class TestDownload(unittest.TestCase):
+
+    def test01EmptyFileClient(self):
+        connection = MockConnection(struct.pack('>Q', 0))
+        file = MockFile()
+        logger = MockLogger()
+
+        Client.downloadFile(connection, file, logger)
+
+        self.assertEqual(file.contentRecv, b"")
+
+    def test02ShortFileClient(self):
+        fileString = b"hola tanto tiempo"
+        connection = MockConnection(struct.pack('>Q', len(fileString)) + fileString)
+        file = MockFile()
+        logger = MockLogger()
+
+        Client.downloadFile(connection, file, logger)
+
+        self.assertEqual(file.contentRecv, fileString)
+
+    def test03LongFileClient(self):
+        fileString = b"hola tanto tiempo"
+
+        while len(fileString) < FILE_SPLIT:
+            fileString += fileString
+
+        connection = MockConnection(struct.pack('>Q', len(fileString)) + fileString)
+        file = MockFile()
+        logger = MockLogger()
+
+        Client.downloadFile(connection, file, logger)
+
+        self.assertEqual(file.contentRecv, fileString)
+        self.assertTrue(file.writeCount > 1)
+
+    def test04EmptyFileServer(self):
+        connection = MockConnection()
+        file = MockFile()
+        logger = MockLogger()
+
+        Server.handleDownload(connection, file, 0, logger)
+
+        self.assertEqual(connection.contentRecv, struct.pack('>Q', 0))
+
+    def test05ShortFileServer(self):
+        fileString = b"hola tanto tiempo"
+
+        connection = MockConnection()
+        file = MockFile(fileString)
+        logger = MockLogger()
+
+        Server.handleDownload(connection, file, len(fileString), logger)
+
+        self.assertEqual(connection.contentRecv, struct.pack('>Q', len(fileString)) + fileString)
+
+    def test06LongFileServer(self):
+        fileString = b"hola tanto tiempo"
+
+        while len(fileString) < FILE_SPLIT:
+            fileString += fileString
+
+        connection = MockConnection()
+        file = MockFile(fileString)
+        logger = MockLogger()
+
+        Server.handleDownload(connection, file, len(fileString), logger)
+
+        self.assertEqual(connection.contentRecv, struct.pack('>Q', len(fileString)) + fileString)
 
 if __name__ == '__main__':
     unittest.main()
