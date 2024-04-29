@@ -58,7 +58,7 @@ def obtainParameters():
         host = args.addr,
         port = args.port,
         filePath = args.filepath,
-        nameFile = args.filename,
+        fileName = args.filename,
         method = args.select_repeat if args.stop_wait is None else args.stop_wait
     )
 

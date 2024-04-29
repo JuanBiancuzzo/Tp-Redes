@@ -8,8 +8,12 @@ class OutputVerbosity(Enum):
     VERBOSE = 3
 
 class SendMethod(Enum):
-    STOP_WAIT= 1
+    STOP_WAIT = 1
     SELECTIVE_REPEAT = 2
+
+class ActionMethod(Enum):
+    UPLOAD = 0
+    DOWNLOAD = 1
 
 @dataclass
 class ClientParameter:
@@ -17,7 +21,7 @@ class ClientParameter:
     host: str
     port: int
     filePath: str
-    nameFile: str
+    fileName: str
     method: SendMethod
 
 @dataclass

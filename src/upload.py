@@ -1,8 +1,9 @@
 import argparse
 
 from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
-from lib.rdtp import RDTP
+
 from lib.logger import Logger
+from lib.client import Client
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
@@ -59,17 +60,23 @@ def obtainParameters():
         host = args.addr,
         port = args.port,
         filePath = args.filepath,
-        nameFile = args.filename,
+        fileName = args.filename,
         method = args.select_repeat if args.stop_wait is None else args.stop_wait
     )
 
 def main(parameter):
     logger = Logger(parameter.outputVerbosity)
+    logger.log(OutputVerbosity.VERBOSE, "Initializing client upload")
 
-    cliente = RDTP(parameter.method, logger)
-    stream = cliente.connect("localhost", 8080)
+    client = Client(
+        parameter.method,
+        logger,
+        parameter.host,
+        parameter.port
+    )
 
-    print(parameter)
+    logger.log(OutputVerbosity.QUIET, "Connection established with server")
+    client.upload(parameter.fileName, parameter.filePath)
 
 if __name__ == "__main__":
     parameter = obtainParameters()
