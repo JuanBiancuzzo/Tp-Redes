@@ -55,6 +55,7 @@ class RDTPStream:
         self.logger.log(OutputVerbosity.VERBOSE, f"entre al recv con método {self.method}")
         result = bytearray()
         for i in range(size):
+            # Get es bloqueante si no hay elementos en la cola, por lo que sí o sí va a haber un byte para leer (si salimos je).
             result.append(self.buffer.get())
         # Puede que sea mejor devolver un bytearray en vez de bytes directamente. A tener en cuenta.
         return bytes(result)
@@ -178,9 +179,9 @@ class RDTPStream:
                 self.logger.log(OutputVerbosity.VERBOSE, f"mande el ack {ack_message.header.ack_num}")
                 self.socket.sendto(ack_message.serialize(), self.receiver_address)
                 
-                if segment.header.is_last:
+                #if segment.header.is_last:
                     #Sigue acá pero hay que cambiarlo por hacer breack si recibe un mensaje con fin.
-                    break
+                #    break
             else:
                 self.logger.log(OutputVerbosity.VERBOSE, f"segmento incorrecto, esperaba {self.ack_number} pero recibi {segment.header.seq_num}")
                 repeated_ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
@@ -190,7 +191,7 @@ class RDTPStream:
     
     
         
-    def recv_selective_repeat(self, size: int) -> bytes:
+    def recv_selective_repeat(self) -> bytes:
         self.logger.log(OutputVerbosity.VERBOSE, "empezando a recibir los segmentos en selective repeat")
         #received_message = bytearray()
         message_buffer = {}
@@ -212,9 +213,9 @@ class RDTPStream:
                 self.logger.log(OutputVerbosity.VERBOSE, f"mande el ack {ack_message.header.ack_num}")
                 self.socket.sendto(ack_message.serialize(), self.receiver_address)
                 
-                if last:
-                    # Sigue acá pero hay que cambiarlo por hacer breack si recibe un mensaje con fin.
-                    break
+                #if last:
+                #    # Sigue acá pero hay que cambiarlo por hacer breack si recibe un mensaje con fin.
+                #    break
             else:
                 self.logger.log(OutputVerbosity.VERBOSE, f"segmento incorrecto, esperaba {self.ack_number} pero recibi {segment.header.seq_num}")
                 if len(message_buffer) < WINDOW_SIZE and segment.header.seq_num not in message_buffer:

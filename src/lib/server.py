@@ -39,6 +39,7 @@ class Server:
             
 
         self.rdtp = RDTP(method, logger)
+        self.rdtp.bind(ip, port)
         self.logger = logger
 
     def listen(self):

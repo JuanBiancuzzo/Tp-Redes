@@ -52,8 +52,6 @@ class RDTP:
 
     # Para el servidor
     def accept(self, ip, port):
-        self.socket.bind((ip, port))
-        
         try:
             
             message, client_address = self.socket.recvfrom(HEADER_SIZE)
@@ -84,6 +82,9 @@ class RDTP:
             return None
         except Exception as e:
             raise e
+
+    def bind(self, ip, port):
+        self.socket.bind((ip, port))
     
     @classmethod
     def craft_syn_message(cls, src_port, dest_port, sequence_number):
