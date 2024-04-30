@@ -1,7 +1,9 @@
 import argparse
-from lib.client import Client
 
 from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
+
+from lib.logger import Logger
+from lib.client import Client
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
@@ -58,15 +60,24 @@ def obtainParameters():
         host = args.addr,
         port = args.port,
         filePath = args.filepath,
-        nameFile = args.filename,
+        fileName = args.filename,
         method = args.select_repeat if args.stop_wait is None else args.stop_wait
     )
 
 def main(parameter):
-    #client = Client(parameter.host, parameter.port, parameter.filePath, parameter.nameFile)
-    client = Client("localhost", 8080)
-    client.download()
+    logger = Logger(parameter.outputVerbosity)
+    logger.log(OutputVerbosity.VERBOSE, "Initializing client download")
+
+    client = Client(
+        parameter.method,
+        logger,
+        parameter.host,
+        parameter.port
+    )
+
+    logger.log(OutputVerbosity.QUIET, "Connection established with server")
+    client.download(parameter.fileName, parameter.filePath)
 
 if __name__ == "__main__":
-    #parameter = obtainParameters()
-    main(None)
+    parameter = obtainParameters()
+    main(parameter)

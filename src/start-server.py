@@ -1,4 +1,5 @@
 import argparse
+import threading
 from lib.server import Server
 
 from lib.parameter import ServerParameter, OutputVerbosity, SendMethod, CustomFormatter
@@ -60,12 +61,31 @@ def obtainParameters():
         method = args.select_repeat if args.stop_wait is None else args.stop_wait
     )
 
-def main(parameter):
-    #server = Server(parameter.host, parameter.port, parameter.storagePath)
+def handleClient(server, connection):
+    server.handleClient(connection)
 
+def main(parameter):
     logger = Logger(parameter.outputVerbosity)
-    server = Server("localhost", 8080, "", parameter.method, logger)
-    server.listen()
+    logger.log(OutputVerbosity.VERBOSE, "Initializing server")
+
+    server = Server(
+        parameter.method,
+        logger,
+        parameter.host, 
+        parameter.port, 
+        parameter.storagePath
+    )
+
+    logger.log(OutputVerbosity.QUIET, "Listening for connections")
+    while True:
+        new_connection = server.listen()
+
+        threading.Thread(
+            target = handleClient,
+            args = (server, new_connection)
+        ).start()
+
+        logger.log(OutputVerbosity.NORMAL, "New connection established")
 
 if __name__ == "__main__":
     parameter = obtainParameters()

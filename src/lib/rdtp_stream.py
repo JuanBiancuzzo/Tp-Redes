@@ -81,7 +81,6 @@ class RDTPStream:
         
         self.logger.log(OutputVerbosity.VERBOSE, "termine de mandar los segmentos")
 
-
     def send_selective_repeat(self, message: bytes):
         self.socket.settimeout(TIMEOUT)
         
@@ -228,3 +227,7 @@ class RDTPStream:
                     last = True
             else:
                 break
+
+    def close(self):
+        pass
+
