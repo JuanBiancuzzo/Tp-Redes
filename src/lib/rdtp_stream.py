@@ -8,6 +8,9 @@ from collections import deque
 
 from math import ceil
 
+import threading
+import queue
+
 PORT_INDEX = 1
 MAX_MSG = 1472 # Ethernet MTU (1500) - IPv4 Header (20) - UDP Header (8), este tamaño contiene nuestro propio header.
 MAX_PAYLOAD = MAX_MSG - HEADER_SIZE
@@ -23,6 +26,18 @@ class RDTPStream:
 
         self.method = method
         self.logger = logger
+        
+        self.buffer = queue.Queue()
+        
+        self.receiver_thread = threading.Thread(target=self._receive_bytes)
+        self.receiver_thread.start()
+    
+    def _receive_bytes(self):
+        self.logger.log(OutputVerbosity.VERBOSE, f"entre al recv con método {self.method} en el thread")
+        if self.method == SendMethod.STOP_WAIT:
+            self.recv_stop_wait()
+        else:
+            self.recv_selective_repeat()
 
     def get_src_port(self):
         return self.socket.getsockname()[PORT_INDEX]
@@ -37,11 +52,12 @@ class RDTPStream:
             self.send_selective_repeat(message)
             
     def recv(self, size: int) -> bytes:
-        print("entre al recv con método", self.method)
-        if self.method == SendMethod.STOP_WAIT:
-            return self.recv_stop_wait(size)
-        else:
-            return self.recv_selective_repeat(size)
+        self.logger.log(OutputVerbosity.VERBOSE, f"entre al recv con método {self.method}")
+        result = bytearray()
+        for i in range(size):
+            result.append(self.buffer.get())
+        # Puede que sea mejor devolver un bytearray en vez de bytes directamente. A tener en cuenta.
+        return bytes(result)
         
     def send_stop_wait(self, message: bytes):
         self.socket.settimeout(TIMEOUT)
@@ -142,9 +158,12 @@ class RDTPStream:
         self.logger.log(OutputVerbosity.VERBOSE, f"reenviando el segmento {oldest_segment.header.seq_num}")
         self.socket.sendto(oldest_segment.serialize(), self.receiver_address)    
 
-    def recv_stop_wait(self, size: int) -> bytes:
+    def write_to_buffer(self, bytes):
+        for byte in bytes:
+            self.buffer.put(byte)
+
+    def recv_stop_wait(self):
         self.logger.log(OutputVerbosity.VERBOSE, "empezando a recibir los segmentos en stop and wait")
-        received_message = bytearray()
         
         while True:
             message, _ = self.socket.recvfrom(MAX_MSG)
@@ -153,13 +172,14 @@ class RDTPStream:
             if segment.header.seq_num == self.ack_number:
                 self.logger.log(OutputVerbosity.VERBOSE, f"recibi el segmento {segment.header.seq_num}")
                 self.ack_number += len(segment.bytes)
-                received_message += segment.bytes
+                self.write_to_buffer(segment.bytes)
                 
                 ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
                 self.logger.log(OutputVerbosity.VERBOSE, f"mande el ack {ack_message.header.ack_num}")
                 self.socket.sendto(ack_message.serialize(), self.receiver_address)
                 
                 if segment.header.is_last:
+                    #Sigue acá pero hay que cambiarlo por hacer breack si recibe un mensaje con fin.
                     break
             else:
                 self.logger.log(OutputVerbosity.VERBOSE, f"segmento incorrecto, esperaba {self.ack_number} pero recibi {segment.header.seq_num}")
@@ -167,13 +187,12 @@ class RDTPStream:
                 self.logger.log(OutputVerbosity.VERBOSE, f"Me mandaron un mensaje con seq number equivocado. Mande el ack {repeated_ack_message.header.ack_num}")
                 
         self.logger.log(OutputVerbosity.VERBOSE, "termine de recibir los segmentos")
-        return received_message
     
     
         
     def recv_selective_repeat(self, size: int) -> bytes:
         self.logger.log(OutputVerbosity.VERBOSE, "empezando a recibir los segmentos en selective repeat")
-        received_message = bytearray()
+        #received_message = bytearray()
         message_buffer = {}
         
         while True:
@@ -185,15 +204,16 @@ class RDTPStream:
                 self.logger.log(OutputVerbosity.VERBOSE, f"recibi el segmento {segment.header.seq_num}")
                 self.logger.log(OutputVerbosity.VERBOSE, f"la longitud del segmento es {len(segment.bytes)}")
                 self.ack_number += len(segment.bytes)
-                received_message += segment.bytes
+                self.write_to_buffer(segment.bytes)
                 
-                self.integrate_buffered_messages(message_buffer, received_message, last)
+                self.integrate_buffered_messages(message_buffer, last)
                 
                 ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
                 self.logger.log(OutputVerbosity.VERBOSE, f"mande el ack {ack_message.header.ack_num}")
                 self.socket.sendto(ack_message.serialize(), self.receiver_address)
                 
                 if last:
+                    # Sigue acá pero hay que cambiarlo por hacer breack si recibe un mensaje con fin.
                     break
             else:
                 self.logger.log(OutputVerbosity.VERBOSE, f"segmento incorrecto, esperaba {self.ack_number} pero recibi {segment.header.seq_num}")
@@ -203,9 +223,8 @@ class RDTPStream:
                 self.logger.log(OutputVerbosity.VERBOSE, f"Me mandaron un mensaje con seq number equivocado. Mande el ack {repeated_ack_message.header.ack_num}")
 
         self.logger.log(OutputVerbosity.VERBOSE, "termine de recibir los segmentos con selective repeat")
-        return received_message
         
-    def integrate_buffered_messages(self, message_buffer, received_message, last):
+    def integrate_buffered_messages(self, message_buffer, last):
         '''
         Takes the buffered messages and based on the current ack number, it integrates them into the received message.
         The message buffer is a dictionary where the key is the sequence number of the message and the value is the message itself.
@@ -216,7 +235,7 @@ class RDTPStream:
                 message_to_add = message_buffer[self.ack_number]
                 
                 self.logger.log(OutputVerbosity.VERBOSE, f"integro el segmento {message_to_add.header.seq_num}")
-                received_message += message_to_add.bytes
+                self.write_to_buffer(message_to_add.bytes)
                 del message_buffer[self.ack_number]
                 
                 self.ack_number += len(message_to_add.bytes)
