@@ -3,7 +3,7 @@ from socket import *
 from lib.protocol.header import Header, HEADER_SIZE
 from lib.logger import Logger
 from lib.parameter import OutputVerbosity
-from lib.rdtp_stream import RDTPStream
+from lib.rdtp_stream import create_stream
 from lib.errors import ProtocolError
 
 import random
@@ -44,7 +44,7 @@ class RDTP:
             self.logger.log(OutputVerbosity.VERBOSE, "mande el ackack")
 
             self.logger.log(OutputVerbosity.QUIET, "hola")
-            return RDTPStream(self.socket, server_address, sequence_number, ack_number, self.method, self.logger)
+            return create_stream(self.socket, server_address, sequence_number, ack_number, self.method, self.logger)
 
         else:
             raise ProtocolError.ERROR_NO_SYNACK
@@ -52,8 +52,6 @@ class RDTP:
 
     # Para el servidor
     def accept(self, ip, port):
-        self.socket.bind((ip, port))
-        
         try:
             
             message, client_address = self.socket.recvfrom(HEADER_SIZE)
@@ -79,11 +77,14 @@ class RDTP:
                 header = Header.deserialize(message)
                 
                 if header.ack:
-                    return RDTPStream(new_client_socket, client_address, sequence_number, ack_number, self.method, self.logger)
+                    return create_stream(new_client_socket, client_address, sequence_number + 1, ack_number, self.method, self.logger)
                 
             return None
         except Exception as e:
             raise e
+
+    def bind(self, ip, port):
+        self.socket.bind((ip, port))
     
     @classmethod
     def craft_syn_message(cls, src_port, dest_port, sequence_number):

@@ -26,9 +26,9 @@ def obtainParameters():
         help = "decrease output verbosity"
     )
 
-    parser.add_argument("-H", "--host", default="", dest="addr", help="server IP address")
+    parser.add_argument("-H", "--host", default="localhost", dest="addr", help="server IP address")
     parser.add_argument("-p", "--port", default=1234, dest="port", type=int, help="server port")
-    parser.add_argument("-s", "--storage", default="", dest="dirpath", help="storage dir path")
+    parser.add_argument("-s", "--storage", default=".", dest="dirpath", help="storage dir path")
 
     method = parser.add_mutually_exclusive_group()
     method.add_argument(
