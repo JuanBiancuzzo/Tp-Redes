@@ -159,8 +159,7 @@ class RDTPStream:
         
         for i in range(num_segments):
             segment_data = message[i * MAX_PAYLOAD : (i + 1) * MAX_PAYLOAD]
-            is_last = True if i == num_segments - 1 else False
-            segment = RDTPSegment.create_new_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number, is_last, segment_data)
+            segment = RDTPSegment.create_new_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number, segment_data)
             
             self.logger.log(OutputVerbosity.VERBOSE, f"mande el segmento {segment.header.seq_num}")
             self.socket.sendto(segment.serialize(), self.receiver_address)
@@ -201,8 +200,7 @@ class RDTPStream:
         # Creo los segmentos y los guardo en una cola
         for i in range(num_segments):
             segment_data = message[i * MAX_PAYLOAD : (i + 1) * MAX_PAYLOAD]
-            is_last = True if i == num_segments - 1 else False
-            segment = RDTPSegment.create_new_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number, is_last, segment_data)
+            segment = RDTPSegment.create_new_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number, segment_data)
             self.sequence_number += len(segment_data)
             segments.append(segment)
         
@@ -270,8 +268,6 @@ class RDTPStream:
     def recv_selective_repeat(self, segment, message_buffer): #-> bytes
         self.logger.log(OutputVerbosity.VERBOSE, "empezando a recibir los segmentos en selective repeat")
         #received_message = bytearray()
-        
-        last = segment.header.is_last
     
         if segment.header.seq_num == self.ack_number:
             self.logger.log(OutputVerbosity.VERBOSE, f"recibi el segmento {segment.header.seq_num}")
@@ -279,7 +275,7 @@ class RDTPStream:
             self.ack_number += len(segment.bytes)
             self.received_queue.put(segment.bytes)
             
-            self.integrate_buffered_messages(message_buffer, last)
+            self.integrate_buffered_messages(message_buffer)
             
             ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
             self.logger.log(OutputVerbosity.VERBOSE, f"mande el ack {ack_message.header.ack_num}")
@@ -298,7 +294,7 @@ class RDTPStream:
 
         # self.logger.log(OutputVerbosity.VERBOSE, "termine de recibir los segmentos con selective repeat")
         
-    def integrate_buffered_messages(self, message_buffer, last):
+    def integrate_buffered_messages(self, message_buffer):
         '''
         Takes the buffered messages and based on the current ack number, it integrates them into the received message.
         The message buffer is a dictionary where the key is the sequence number of the message and the value is the message itself.
@@ -314,10 +310,6 @@ class RDTPStream:
                 
                 self.ack_number += len(message_to_add.bytes)
                 self.logger.log(OutputVerbosity.VERBOSE, f"ack number actualizado a {self.ack_number}")
-                
-                if message_to_add.header.is_last:
-                    self.logger.log(OutputVerbosity.VERBOSE, "Encontré el último segmento")
-                    last = True
             else:
                 break
 

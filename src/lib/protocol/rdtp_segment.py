@@ -14,11 +14,26 @@ class RDTPSegment:
         return cls(header, data[HEADER_SIZE:])
     
     @classmethod
-    def create_new_message(cls, src_port, dst_port, seq_num, ack_num, is_last, bytes):
-        header = Header(src_port, dst_port, seq_num, ack_num, len(bytes), False, True, False, is_last)
+    def create_new_message(cls, src_port, dst_port, seq_num, ack_num, bytes):
+        header = Header(src_port, dst_port, seq_num, ack_num, len(bytes), False, True, False)
         return cls(header, bytes)
     
     @classmethod
     def create_ack_message(cls, src_port, dst_port, seq_num, ack_num):
-        header = Header(src_port, dst_port, seq_num, ack_num, 0, False, True, False, False)
+        header = Header(src_port, dst_port, seq_num, ack_num, 0, False, True, False)
+        return RDTPSegment(header, b"")
+    
+    @classmethod
+    def create_syn_message(cls, src_port, dest_port, sequence_number):
+        header =  Header(src_port, dest_port, sequence_number, 0, 0, True, False, False)
+        return RDTPSegment(header, b"")
+    
+    @classmethod
+    def create_syn_ack_message(cls, src_port, dest_port, sequence_number, ack_number):
+        header = Header(src_port, dest_port, sequence_number, ack_number, 0, True, True, False)
+        return RDTPSegment(header, b"")
+    
+    @classmethod
+    def create_ack_ack_message(cls, src_port, dest_port, sequence_number, ack_number):
+        header = Header(src_port, dest_port, sequence_number, ack_number, 0, False, True, False)
         return RDTPSegment(header, b"")

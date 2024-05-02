@@ -1,6 +1,7 @@
 from socket import *
 
 from lib.protocol.header import Header, HEADER_SIZE
+from lib.protocol.rdtp_segment import RDTPSegment
 from lib.logger import Logger
 from lib.parameter import OutputVerbosity
 from lib.rdtp_stream import create_stream
@@ -21,7 +22,7 @@ class RDTP:
     def connect(self, dest_ip, dest_port):
         src_port = self.socket.getsockname()[SRC_PORT_INDEX]
         sequence_number = RDTP.generate_initial_sequence_number()
-        syn_message = RDTP.craft_syn_message(src_port, dest_port, sequence_number)
+        syn_message = RDTPSegment.create_syn_message(src_port, dest_port, sequence_number)
         
         self.socket.sendto(syn_message.serialize(), (dest_ip, dest_port))
         self.logger.log(OutputVerbosity.VERBOSE, f"mande el syn a {dest_ip}:{dest_port}")
@@ -39,7 +40,7 @@ class RDTP:
         if header.syn and header.ack:
 
             sequence_number += 1
-            ack_ack_message = RDTP.craft_ack_ack_message(src_port, dest_port, sequence_number, ack_number)
+            ack_ack_message = RDTPSegment.create_ack_ack_message(src_port, dest_port, sequence_number, ack_number)
             self.socket.sendto(ack_ack_message.serialize(), server_address)
             self.logger.log(OutputVerbosity.VERBOSE, "mande el ackack")
 
@@ -68,7 +69,7 @@ class RDTP:
                 new_client_socket.bind((ip, 0))
                 new_port = new_client_socket.getsockname()[SRC_PORT_INDEX]
                 
-                syn_ack_message = RDTP.craft_syn_ack_message(new_port, dest_port, sequence_number, ack_number)
+                syn_ack_message = RDTPSegment.create_syn_ack_message(new_port, dest_port, sequence_number, ack_number)
                 self.socket.sendto(syn_ack_message.serialize(), client_address)
                 self.logger.log(OutputVerbosity.VERBOSE, "server: mande el syn-ack")
                 
@@ -85,18 +86,6 @@ class RDTP:
 
     def bind(self, ip, port):
         self.socket.bind((ip, port))
-    
-    @classmethod
-    def craft_syn_message(cls, src_port, dest_port, sequence_number):
-        return Header(src_port, dest_port, sequence_number, 0, 0, True, False, False, False)
-    
-    @classmethod 
-    def craft_syn_ack_message(cls, src_port, dest_port, sequence_number, ack_number):
-        return Header(src_port, dest_port, sequence_number, ack_number, 0, True, True, False, False)
-    
-    @classmethod
-    def craft_ack_ack_message(cls, src_port, dest_port, sequence_number, ack_number):
-        return Header(src_port, dest_port, sequence_number, ack_number, 0, False, True, False, False)
     
     @classmethod
     def generate_initial_sequence_number(cls):
