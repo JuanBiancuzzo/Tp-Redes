@@ -103,17 +103,17 @@ class Server:
 
             # Creando el directorio
             try:
-                os.mkdir(os.path.join(os.getcwd(), f"{self.dir}/{package.filePath}"))
+                os.mkdir(os.path.join(os.getcwd(), f"{self.dir}"))
             except:
                 pass
 
-            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "wb") as file:
+            with open(f"{self.dir}/{package.fileName}", "wb") as file:
                 Server.handleUpload(connection, file, self.logger)
         else:
             self.logger.log(OutputVerbosity.NORMAL, f"Sending file: {package.fileName}\n\tFrom: {package.filePath}")
-            fileSize = os.path.getsize(f"{self.dir}/{package.filePath}/{package.fileName}")
+            fileSize = os.path.getsize(f"{self.dir}/{package.fileName}")
 
-            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "rb") as file:
+            with open(f"{self.dir}/{package.fileName}", "rb") as file:
                 Server.handleDownload(connection, file, fileSize, self.logger)
 
         self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")
