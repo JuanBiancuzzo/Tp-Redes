@@ -44,7 +44,6 @@ class RDTP:
             self.socket.sendto(ack_ack_message.serialize(), server_address)
             self.logger.log(OutputVerbosity.VERBOSE, "mande el ackack")
 
-            self.logger.log(OutputVerbosity.QUIET, "hola")
             return create_stream(self.socket, server_address, sequence_number, ack_number, self.method, self.logger)
 
         else:
