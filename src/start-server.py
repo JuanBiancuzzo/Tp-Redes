@@ -90,7 +90,7 @@ def main(parameter):
             server.handlers.append(client_handler_handle)
             logger.log(OutputVerbosity.NORMAL, "New connection established")
     except KeyboardInterrupt:
-        logger.log(OutputVerbosity.NORMAL, "Server stopped. Closing connections")
+        logger.log(OutputVerbosity.NORMAL, "\nServer stopped. Closing connections")
         server.joinHandles()
 
 if __name__ == "__main__":

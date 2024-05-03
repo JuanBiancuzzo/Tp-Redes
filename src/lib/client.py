@@ -117,7 +117,7 @@ class Client:
 
         # Creando el directorio
         try:
-            os.mkdir(os.path.join(os.getcwd(), filepath))
+            os.makedirs(os.path.join(os.getcwd(), filepath), exist_ok=True)
         except:
             pass
 
