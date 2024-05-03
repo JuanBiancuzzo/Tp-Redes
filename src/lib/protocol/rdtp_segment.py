@@ -15,7 +15,7 @@ class RDTPSegment:
     
     @classmethod
     def create_new_message(cls, src_port, dst_port, seq_num, ack_num, bytes):
-        header = Header(src_port, dst_port, seq_num, ack_num, len(bytes), False, True, False)
+        header = Header(src_port, dst_port, seq_num, ack_num, len(bytes), False, False, False)
         return cls(header, bytes)
     
     @classmethod
@@ -41,4 +41,9 @@ class RDTPSegment:
     @classmethod
     def create_fin_message(cls, src_port, dest_port, sequence_number, ack_number):
         header = Header(src_port, dest_port, sequence_number, ack_number, 0, False, False, True)
+        return RDTPSegment(header, b"")
+    
+    @classmethod
+    def create_fin_ack_message(cls, src_port, dest_port, sequence_number, ack_number):
+        header = Header(src_port, dest_port, sequence_number, ack_number, 0, False, True, True)
         return RDTPSegment(header, b"")
