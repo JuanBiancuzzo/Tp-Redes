@@ -26,10 +26,10 @@ class RDTP:
         syn_message = RDTPSegment.create_syn_message(src_port, dest_port, sequence_number)
         
         self.socket.sendto(syn_message.serialize(), (dest_ip, dest_port))
-        self.logger.log(OutputVerbosity.VERBOSE, f"mande el syn a {dest_ip}:{dest_port}")
+        self.logger.log(OutputVerbosity.VERBOSE, f"Syn message sent to: {dest_ip}:{dest_port}")
 
         message, server_address = self.socket.recvfrom(HEADER_SIZE)
-        self.logger.log(OutputVerbosity.VERBOSE, "recibi el syn-ack")
+        self.logger.log(OutputVerbosity.VERBOSE, "Received syn-ack message")
 
         header = Header.deserialize(message)
         ack_number = header.seq_num + 1
@@ -43,7 +43,7 @@ class RDTP:
             sequence_number += 1
             ack_ack_message = RDTPSegment.create_ack_ack_message(src_port, dest_port, sequence_number, ack_number)
             self.socket.sendto(ack_ack_message.serialize(), server_address)
-            self.logger.log(OutputVerbosity.VERBOSE, "mande el ackack")
+            self.logger.log(OutputVerbosity.VERBOSE, "Ack-Ack message sent")
 
             return create_stream(self.socket, server_address, sequence_number, ack_number, self.method, self.logger)
 
@@ -56,7 +56,7 @@ class RDTP:
         try:
             
             message, client_address = self.socket.recvfrom(HEADER_SIZE)
-            self.logger.log(OutputVerbosity.VERBOSE, "server: recibi el syn")
+            self.logger.log(OutputVerbosity.VERBOSE, "Server: Syn message received")
             header = Header.deserialize(message)
             
             if header.syn:
@@ -71,10 +71,10 @@ class RDTP:
                 
                 syn_ack_message = RDTPSegment.create_syn_ack_message(new_port, dest_port, sequence_number, ack_number)
                 self.socket.sendto(syn_ack_message.serialize(), client_address)
-                self.logger.log(OutputVerbosity.VERBOSE, "server: mande el syn-ack")
+                self.logger.log(OutputVerbosity.VERBOSE, "Server: Syn-Ack message sent")
                 
                 message, client_address = new_client_socket.recvfrom(HEADER_SIZE)
-                self.logger.log(OutputVerbosity.VERBOSE, "server: recibi el ackack")
+                self.logger.log(OutputVerbosity.VERBOSE, "Server: Ack-Ack message received")
                 header = Header.deserialize(message)
                 
                 if header.ack:

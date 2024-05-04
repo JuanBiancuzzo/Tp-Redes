@@ -96,7 +96,7 @@ class Client:
         while fileSize > 0:
             message = connection.recv(split)
 
-            logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} receive")
+            logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} received")
 
             file.write(message)
 

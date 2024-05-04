@@ -67,7 +67,7 @@ class RDTPStream:
             * ProtocolError.ERROR_SENDING_MESSAGE
         """
 
-        self.logger.log(OutputVerbosity.VERBOSE, f"entre al recv con método {self.method} en el thread")
+        self.logger.log(OutputVerbosity.VERBOSE, f"Entered recv with {self.method} method in thread")
         if self.method == SendMethod.STOP_WAIT:
             self.recv_stop_wait(segment)
         else:
@@ -107,7 +107,7 @@ class RDTPStream:
         self.socket.settimeout(TIMEOUT)
         
         num_segments = ceil(len(message) / MAX_PAYLOAD)
-        self.logger.log(OutputVerbosity.VERBOSE, f"voy a mandar {num_segments} segmentos con stop and wait")
+        self.logger.log(OutputVerbosity.VERBOSE, f"Sending {num_segments} segments with stop and wait")
         
         if num_segments <= 0:
             raise ProtocolError.ERROR_EMPTY_MESSAGE
@@ -116,7 +116,7 @@ class RDTPStream:
             segment_data = message[i * MAX_PAYLOAD : (i + 1) * MAX_PAYLOAD]
             segment = RDTPSegment.create_new_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number, segment_data)
             
-            self.logger.log(OutputVerbosity.VERBOSE, f"mande el segmento {segment.header.seq_num}")
+            self.logger.log(OutputVerbosity.VERBOSE, f"Sent {segment.header.seq_num} segment")
             try:
                 self.socket.sendto(segment.serialize(), self.receiver_address)
             except socket.error:
@@ -126,12 +126,12 @@ class RDTPStream:
            
             while True:
                 try:
-                    self.logger.log(OutputVerbosity.VERBOSE, f"esperando ack del segmento {segment.header.seq_num}")
+                    self.logger.log(OutputVerbosity.VERBOSE, f"Waiting ack message from segment: {segment.header.seq_num}")
                     answer, _ = self.socket.recvfrom(MAX_MSG)
                     ack_message = RDTPSegment.deserialize(answer)
                     
                 except socket.timeout:
-                    self.logger.log(OutputVerbosity.VERBOSE, f"timeout, reenviando el segmento {segment.header.seq_num}")
+                    self.logger.log(OutputVerbosity.VERBOSE, f"Timeout, re-sending segment: {segment.header.seq_num}")
                     try:
                         self.socket.sendto(segment.serialize(), self.receiver_address)
                     except socket.error:
@@ -143,10 +143,10 @@ class RDTPStream:
                     raise ProtocolError.ERROR_RECEIVING_MESSAGE
 
                 if ack_message.header.ack_num == self.sequence_number:
-                    self.logger.log(OutputVerbosity.VERBOSE, f"recibi el ack {ack_message.header.ack_num}")
+                    self.logger.log(OutputVerbosity.VERBOSE, f"Ack message received: {ack_message.header.ack_num}")
                     break
                 else:
-                    self.logger.log(OutputVerbosity.VERBOSE, f"ack incorrecto, esperaba {self.sequence_number} pero recibi {ack_message.header.ack_num}. Reenvío el segmento {segment.header.seq_num}")
+                    self.logger.log(OutputVerbosity.VERBOSE, f"Received incorrect ack message, expected: {self.sequence_number} received: {ack_message.header.ack_num}. Re-sending segment: {segment.header.seq_num}")
                     try:
                         self.socket.sendto(segment.serialize(), self.receiver_address)
                     except:
@@ -154,7 +154,7 @@ class RDTPStream:
                     
                     continue
         
-        self.logger.log(OutputVerbosity.VERBOSE, "termine de mandar los segmentos")
+        self.logger.log(OutputVerbosity.VERBOSE, "All segments were sent")
 
     def send_selective_repeat(self, message: bytes):
         """
@@ -169,7 +169,7 @@ class RDTPStream:
         self.socket.settimeout(TIMEOUT)
         
         num_segments = ceil(len(message) / MAX_PAYLOAD)
-        self.logger.log(OutputVerbosity.VERBOSE, f"voy a mandar {num_segments} segmentos con selective repeat")
+        self.logger.log(OutputVerbosity.VERBOSE, f"Sending {num_segments} segments with selective repeat")
         
         if num_segments <= 0:
             raise ProtocolError.ERROR_EMPTY_MESSAGE
@@ -190,10 +190,10 @@ class RDTPStream:
             try:
                 message, _ = self.socket.recvfrom(MAX_MSG)
                 ack_message = RDTPSegment.deserialize(message)
-                self.logger.log(OutputVerbosity.VERBOSE, f"recibi el ack {ack_message.header.ack_num}")
+                self.logger.log(OutputVerbosity.VERBOSE, f"Ack message received: {ack_message.header.ack_num}")
 
             except socket.timeout:
-                self.logger.log(OutputVerbosity.VERBOSE, f"timeout, reenviando el segmento más viejo")
+                self.logger.log(OutputVerbosity.VERBOSE, f"Timeout, re-sending oldest segment in window")
                 self.resend_oldest_segment(window)
                 continue
 
@@ -205,16 +205,16 @@ class RDTPStream:
             
             # Si recibieron algún segmento en orden, mínimamente nos mandaran el ack del primer segmento en la ventana.
             if lenght_before_removal > len(window):
-                self.logger.log(OutputVerbosity.VERBOSE, f"ack nuevo, mandando nuevos segmentos")
+                self.logger.log(OutputVerbosity.VERBOSE, f"Received new ack message, sending new batch of segments")
                 self.send_new_batch(window, segments)
             # Si no cambió la longitud, entonces nos mandaron un ack repetido.
             else:
-                self.logger.log(OutputVerbosity.VERBOSE, f"ack repetido, reenvío el más viejo")
+                self.logger.log(OutputVerbosity.VERBOSE, f"Received repeated ack message, re-sending oldest segment in window")
                 self.resend_oldest_segment(window)
 
     def send_new_batch(self, window, segments):
         '''
-        Llenamos la ventana con los siguientes segmentos a enviar y los enviamos.
+        Filling the window with the segments to be sent and sends them.
 
         Exception:
             * ProtocolError.ERROR_PACKING
@@ -224,7 +224,7 @@ class RDTPStream:
         while not window.is_full() and len(segments) > 0:
             segment_to_send = segments.popleft()
 
-            self.logger.log(OutputVerbosity.VERBOSE, f"mande el segmento {segment_to_send.header.seq_num}")
+            self.logger.log(OutputVerbosity.VERBOSE, f"Sent segment: {segment_to_send.header.seq_num}")
 
             try:
                 self.socket.sendto(segment_to_send.serialize(), self.receiver_address)
@@ -241,7 +241,7 @@ class RDTPStream:
         """
 
         oldest_segment = window.get_oldest_segment()
-        self.logger.log(OutputVerbosity.VERBOSE, f"reenviando el segmento {oldest_segment.header.seq_num}")
+        self.logger.log(OutputVerbosity.VERBOSE, f"Re-sending segment: {oldest_segment.header.seq_num}")
         
         try:
             self.socket.sendto(oldest_segment.serialize(), self.receiver_address)    
@@ -258,7 +258,7 @@ class RDTPStream:
         self.ack_number += 1
         self.received_close_message = True
         fin_ack_message = RDTPSegment.create_fin_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
-        self.logger.log(OutputVerbosity.VERBOSE, f"mande el fin-ack {fin_ack_message.header.ack_num}")
+        self.logger.log(OutputVerbosity.VERBOSE, f"Fin-ack message sent {fin_ack_message.header.ack_num}")
         
         try:
             self.socket.sendto(fin_ack_message.serialize(), self.receiver_address)
@@ -272,10 +272,10 @@ class RDTPStream:
             * ProtocolError.ERROR_SENDING_MESSAGE
         """
         
-        self.logger.log(OutputVerbosity.VERBOSE, "empezando a recibir los segmentos en stop and wait")
+        self.logger.log(OutputVerbosity.VERBOSE, "Starting to receive segments in stop and wait")
         
         if segment.header.seq_num == self.ack_number:
-            self.logger.log(OutputVerbosity.VERBOSE, f"recibi el segmento {segment.header.seq_num}")
+            self.logger.log(OutputVerbosity.VERBOSE, f"Received segment: {segment.header.seq_num}")
             
             if segment.header.fin:
                 self.send_fin_ack_message()
@@ -283,16 +283,16 @@ class RDTPStream:
                 self.ack_number += len(segment.bytes)
                 self.received_queue.put(segment.bytes)
                 ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
-                self.logger.log(OutputVerbosity.VERBOSE, f"mande el ack {ack_message.header.ack_num}")
+                self.logger.log(OutputVerbosity.VERBOSE, f"Ack message sent: {ack_message.header.ack_num}")
                 
                 try:
                     self.socket.sendto(ack_message.serialize(), self.receiver_address)
                 except socket.error:
                     raise ProtocolError.ERROR_SENDING_MESSAGE
         else:
-            self.logger.log(OutputVerbosity.VERBOSE, f"segmento incorrecto, esperaba {self.ack_number} pero recibi {segment.header.seq_num}")
+            self.logger.log(OutputVerbosity.VERBOSE, f"Received incorrect ack message, expected: {self.ack_number} received: {segment.header.seq_num}")
             repeated_ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
-            self.logger.log(OutputVerbosity.VERBOSE, f"Me mandaron un mensaje con seq number equivocado. Mande el ack {repeated_ack_message.header.ack_num}")
+            self.logger.log(OutputVerbosity.VERBOSE, f"Received message with wrong sequence number. Ack sent: {repeated_ack_message.header.ack_num}")
                         
     def recv_selective_repeat(self, segment, message_buffer):
         """
@@ -301,10 +301,10 @@ class RDTPStream:
             * ProtocolError.ERROR_SENDING_MESSAGE
         """
 
-        self.logger.log(OutputVerbosity.VERBOSE, "empezando a recibir los segmentos en selective repeat")
+        self.logger.log(OutputVerbosity.VERBOSE, "Starting to receive segments in selective repeat")
     
         if segment.header.seq_num == self.ack_number:
-            self.logger.log(OutputVerbosity.VERBOSE, f"recibi el segmento {segment.header.seq_num}")
+            self.logger.log(OutputVerbosity.VERBOSE, f"Received segment: {segment.header.seq_num}")
             
             if segment.header.fin:
                 self.send_fin_ack_message()
@@ -315,19 +315,19 @@ class RDTPStream:
                 self.integrate_buffered_messages(message_buffer)
                 
                 ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
-                self.logger.log(OutputVerbosity.VERBOSE, f"mande el ack {ack_message.header.ack_num}")
+                self.logger.log(OutputVerbosity.VERBOSE, f"Ack sent: {ack_message.header.ack_num}")
                 
                 try:
                     self.socket.sendto(ack_message.serialize(), self.receiver_address)
                 except socket.error:
                     raise ProtocolError.ERROR_SENDING_MESSAGE
         else:
-            self.logger.log(OutputVerbosity.VERBOSE, f"segmento incorrecto, esperaba {self.ack_number} pero recibi {segment.header.seq_num}")
+            self.logger.log(OutputVerbosity.VERBOSE, f"Received incorrect ack message, expected: {self.ack_number} received: {segment.header.seq_num}")
             if len(message_buffer) < WINDOW_SIZE and segment.header.seq_num not in message_buffer:
                 message_buffer[segment.header.seq_num] = segment
             
             repeated_ack_message = RDTPSegment.create_ack_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
-            self.logger.log(OutputVerbosity.VERBOSE, f"Me mandaron un mensaje con seq number equivocado. Mande el ack {repeated_ack_message.header.ack_num}")
+            self.logger.log(OutputVerbosity.VERBOSE, f"Received message with wrong sequence number. Ack sent: {repeated_ack_message.header.ack_num}")
         
     def integrate_buffered_messages(self, message_buffer):
         """
@@ -339,12 +339,12 @@ class RDTPStream:
             if self.ack_number in message_buffer:
                 message_to_add = message_buffer[self.ack_number]
                 
-                self.logger.log(OutputVerbosity.VERBOSE, f"integro el segmento {message_to_add.header.seq_num}")
+                self.logger.log(OutputVerbosity.VERBOSE, f"Segment integrated {message_to_add.header.seq_num}")
                 self.received_queue.put(message_to_add.bytes)
                 del message_buffer[self.ack_number]
                 
                 self.ack_number += len(message_to_add.bytes)
-                self.logger.log(OutputVerbosity.VERBOSE, f"ack number actualizado a {self.ack_number}")
+                self.logger.log(OutputVerbosity.VERBOSE, f"Ack number updated to: {self.ack_number}")
             else:
                 break
 
@@ -358,9 +358,9 @@ class RDTPStream:
         """
         self.socket.settimeout(TIMEOUT)
 
-        self.logger.log(OutputVerbosity.VERBOSE, "Cerrando el stream")
+        self.logger.log(OutputVerbosity.VERBOSE, "Closing stream")
         fin_message = RDTPSegment.create_fin_message(self.get_src_port(), self.get_destination_port(), self.sequence_number, self.ack_number)
-        
+
         try:
             self.socket.sendto(fin_message.serialize(), self.receiver_address)
         except socket.error:
@@ -373,10 +373,10 @@ class RDTPStream:
                 message, _ = self.socket.recvfrom(MAX_MSG)
                 fin_ack_message = RDTPSegment.deserialize(message)
                 if fin_ack_message.header.fin and fin_ack_message.header.ack and fin_ack_message.header.ack_num == self.sequence_number:
-                    self.logger.log(OutputVerbosity.VERBOSE, "Recibi el fin-ack")
+                    self.logger.log(OutputVerbosity.VERBOSE, "Fin-Ack message received")
                     break
             except socket.timeout:
-                self.logger.log(OutputVerbosity.VERBOSE, "Timeout, reenviando el fin")
+                self.logger.log(OutputVerbosity.VERBOSE, "Timeout, re-sending fin message")
                 
                 try:
                     self.socket.sendto(fin_message.serialize(), self.receiver_address)
@@ -389,4 +389,5 @@ class RDTPStream:
                 raise ProtocolError.ERROR_RECEIVING_MESSAGE
 
         self.socket.settimeout(None)
+        self.logger.log(OutputVerbosity.QUIET, "Closed stream")
         self.sent_close_message = True
