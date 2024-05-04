@@ -1,15 +1,25 @@
 from lib.protocol.header import Header, HEADER_SIZE
 
 class RDTPSegment:
-    def __init__(self, header, bytes):
+    def __init__(self, header: Header, bytes):
         self.header = header
         self.bytes = bytes
     
     def serialize(self):
+        """
+        Exception:  
+            * ProtocolError.ERROR_PACKING
+        """
+
         return self.header.serialize() + self.bytes
 
     @classmethod
     def deserialize(cls, data):
+        """
+        Exception:
+            * ProtocolError.ERROR_UNPACKING
+        """
+
         header = Header.deserialize(data[:HEADER_SIZE])
         return cls(header, data[HEADER_SIZE:])
     

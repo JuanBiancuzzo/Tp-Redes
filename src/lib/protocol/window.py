@@ -20,7 +20,7 @@ class Window:
             self.window.popleft()
 
     def is_full(self):
-        return len(self.window) == self.size
+        return len(self.window) >= self.size
 
     def get_oldest_segment(self):
         return self.window[0] if len(self.window) > 0 else None

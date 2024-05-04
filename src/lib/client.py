@@ -5,6 +5,7 @@ import struct
 from lib.rdtp import RDTP
 from lib.parameter import ActionMethod, OutputVerbosity
 from lib.protocol.header_package import HeaderPackage
+from lib.errors import ProtocolError, AplicationError
 
 FILE_SIZE_SIZE = 8
 

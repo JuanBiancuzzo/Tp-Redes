@@ -1,10 +1,11 @@
-from socket import *
+from socket import socket, AF_INET, SOCK_DGRAM
 
 from lib.protocol.header import Header, HEADER_SIZE
 from lib.protocol.rdtp_segment import RDTPSegment
 from lib.logger import Logger
 from lib.parameter import OutputVerbosity
-from lib.rdtp_stream import create_stream
+from lib.manage_stream import create_stream
+
 from lib.errors import ProtocolError
 
 import random
@@ -12,7 +13,7 @@ import random
 SRC_PORT_INDEX = 1
 
 class RDTP:
-    def __init__(self, method, logger):
+    def __init__(self, method, logger: Logger):
         self.socket = socket(AF_INET, SOCK_DGRAM)
 
         self.method = method
