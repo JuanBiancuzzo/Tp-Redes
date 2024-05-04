@@ -40,8 +40,6 @@ class Server:
         self.rdtp = RDTP(method, logger)
         self.rdtp.bind(ip, port)
         self.logger = logger
-        
-        self.handlers = []
 
     def listen(self):
         return self.rdtp.accept(self.ip, self.port)
@@ -120,7 +118,3 @@ class Server:
         # self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")
         # connection.close()
         # self.logger.log(OutputVerbosity.QUIET, "Closed connection with client")
-
-    def joinHandles(self):
-        for handle in self.handlers:
-            handle.join()

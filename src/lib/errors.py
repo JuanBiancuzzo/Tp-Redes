@@ -1,7 +1,7 @@
 from enum import Enum
 
 class ProtocolError(Exception, Enum):
-    ERROR_NO_SYNACK = 1
+    ERROR_HANDSHAKE = 1
     ERROR_ENCODING_FILE_DATA = 2
     ERROR_DECODING_FILE_DATA = 3
     ERROR_PACKING = 4
@@ -13,5 +13,5 @@ class ProtocolError(Exception, Enum):
     ERROR_CREATING_STREAM_THREAD = 10
 
 class AplicationError(Exception, Enum):
-    ERROR = 1
+    ERROR_CONNECTION = 1
 

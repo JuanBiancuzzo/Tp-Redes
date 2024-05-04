@@ -4,6 +4,7 @@ from lib.server import Server
 
 from lib.parameter import ServerParameter, OutputVerbosity, SendMethod, CustomFormatter
 from lib.logger import Logger
+from lib.errors import ProtocolError
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
@@ -62,7 +63,7 @@ def obtainParameters():
     )
 
 def handleClient(server, connection):
-    server.handleClient(connection)
+    server.handleClient(connection)                
 
 def main(parameter):
     logger = Logger(parameter.outputVerbosity)
@@ -77,21 +78,31 @@ def main(parameter):
     )
 
     logger.log(OutputVerbosity.QUIET, "Listening for connections")
-    
+    handlers = []
+
     try:
         while True:
-            new_connection = server.listen()
+            try:
+                new_connection = server.listen()
+            except ProtocolError as protocolError:
+                if protocolError == ProtocolError.ERROR_HANDSHAKE:
+                    continue
+                else:
+                    raise protocolError
+            
             client_handler_handle = threading.Thread(
                 target = handleClient,
                 args = (server, new_connection)
             )
             
             client_handler_handle.start()
-            server.handlers.append(client_handler_handle)
+            handlers.append(client_handler_handle)
             logger.log(OutputVerbosity.NORMAL, "New connection established")
+
     except KeyboardInterrupt:
         logger.log(OutputVerbosity.NORMAL, "\nServer stopped. Closing connections")
-        server.joinHandles()
+        for handle in handlers:
+            handle.join()
 
 if __name__ == "__main__":
     parameter = obtainParameters()

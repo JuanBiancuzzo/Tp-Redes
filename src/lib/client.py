@@ -11,7 +11,7 @@ FILE_SIZE_SIZE = 8
 
 FORMAT = '>Q' # 8 bytes
 # FILE_SPLIT = 2**28 # 250 Mbytes 
-FILE_SPLIT = 2**58 # minimo es más que eso 250 Mbytes 
+FILE_SPLIT = 2**58
 
 def calculateSizeString(numBytes):
     if numBytes < 2**10:
