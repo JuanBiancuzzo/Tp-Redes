@@ -77,15 +77,21 @@ def main(parameter):
     )
 
     logger.log(OutputVerbosity.QUIET, "Listening for connections")
-    while True:
-        new_connection = server.listen()
-
-        threading.Thread(
-            target = handleClient,
-            args = (server, new_connection)
-        ).start()
-
-        logger.log(OutputVerbosity.NORMAL, "New connection established")
+    
+    try:
+        while True:
+            new_connection = server.listen()
+            client_handler_handle = threading.Thread(
+                target = handleClient,
+                args = (server, new_connection)
+            )
+            
+            client_handler_handle.start()
+            server.handlers.append(client_handler_handle)
+            logger.log(OutputVerbosity.NORMAL, "New connection established")
+    except KeyboardInterrupt:
+        logger.log(OutputVerbosity.NORMAL, "\nServer stopped. Closing connections")
+        server.joinHandles()
 
 if __name__ == "__main__":
     parameter = obtainParameters()

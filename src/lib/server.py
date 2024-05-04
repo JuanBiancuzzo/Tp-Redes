@@ -33,14 +33,15 @@ class Server:
 
         # Creando el directorio
         try:
-            os.mkdir(os.path.join(os.getcwd(), dir))
-        except:
-            pass
+            os.makedirs(os.path.join(os.getcwd(), dir), exist_ok=True)
+        except Exception as e:
+            logger.log(OutputVerbosity.VERBOSE, f"Error creating directory: {e}")
             
-
         self.rdtp = RDTP(method, logger)
         self.rdtp.bind(ip, port)
         self.logger = logger
+        
+        self.handlers = []
 
     def listen(self):
         return self.rdtp.accept(self.ip, self.port)
@@ -103,19 +104,23 @@ class Server:
 
             # Creando el directorio
             try:
-                os.mkdir(os.path.join(os.getcwd(), f"{self.dir}/{package.filePath}"))
-            except:
-                pass
-
-            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "wb") as file:
+                os.makedirs(os.path.join(os.getcwd(), f"{self.dir}"), exist_ok=True)
+            except Exception as e:
+                self.logger.log(OutputVerbosity.VERBOSE, f"Error creating directory: {e}")
+                
+            with open(f"{self.dir}/{package.fileName}", "wb") as file:
                 Server.handleUpload(connection, file, self.logger)
         else:
             self.logger.log(OutputVerbosity.NORMAL, f"Sending file: {package.fileName}\n\tFrom: {package.filePath}")
-            fileSize = os.path.getsize(f"{self.dir}/{package.filePath}/{package.fileName}")
+            fileSize = os.path.getsize(f"{self.dir}/{package.fileName}")
 
-            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "rb") as file:
+            with open(f"{self.dir}/{package.fileName}", "rb") as file:
                 Server.handleDownload(connection, file, fileSize, self.logger)
 
-        self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")
-        connection.close()
-        self.logger.log(OutputVerbosity.QUIET, "Closed connection with client")
+        # self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")
+        # connection.close()
+        # self.logger.log(OutputVerbosity.QUIET, "Closed connection with client")
+
+    def joinHandles(self):
+        for handle in self.handlers:
+            handle.join()
