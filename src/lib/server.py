@@ -6,6 +6,7 @@ from lib.rdtp import RDTP
 from lib.protocol.header_package import HeaderPackage, HEADER_SIZE
 from lib.parameter import ActionMethod, OutputVerbosity
 from lib.logger import Logger
+from lib.errors import ProtocolError, ApplicationError
 
 FILE_SIZE_SIZE = 8
 FORMAT = '>Q'
@@ -40,8 +41,6 @@ class Server:
         self.rdtp = RDTP(method, logger)
         self.rdtp.bind(ip, port)
         self.logger = logger
-        
-        self.handlers = []
 
     def listen(self):
         return self.rdtp.accept(self.ip, self.port)
@@ -49,14 +48,21 @@ class Server:
     @classmethod
     def handleUpload(cls, connection, file, logger):
         logger.log(OutputVerbosity.VERBOSE, "Receiving file size")
-        message = connection.recv(FILE_SIZE_SIZE)
+        try:
+            message = connection.recv(FILE_SIZE_SIZE)
+        except ProtocolError:
+            raise ApplicationError.ERROR_RECEIVING
+            
         fileSize = struct.unpack(FORMAT, message)[0]
         logger.log(OutputVerbosity.VERBOSE, f"File to save of size: {calculateSizeString(fileSize)}")
 
         logger.log(OutputVerbosity.NORMAL, "Receiving file from client")
         split = min(FILE_SPLIT, fileSize)
         while fileSize > 0:
-            message = connection.recv(split)
+            try:
+                message = connection.recv(split)
+            except ProtocolError:
+                raise ApplicationError.ERROR_RECEIVING
 
             logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} received")
 
@@ -70,7 +76,10 @@ class Server:
     @classmethod
     def handleDownload(cls, connection, file, fileSize, logger):
         logger.log(OutputVerbosity.VERBOSE, "Sending file size")
-        connection.send(struct.pack(FORMAT, fileSize))
+        try:
+            connection.send(struct.pack(FORMAT, fileSize))
+        except ProtocolError:
+            raise ApplicationError.ERROR_SENDING
         logger.log(OutputVerbosity.VERBOSE, "File size sent")
 
         split = min(FILE_SPLIT, fileSize)
@@ -78,7 +87,10 @@ class Server:
         logger.log(OutputVerbosity.NORMAL, "Sending file to client")
         while fileSize > 0:
             message = file.read(split)
-            connection.send(message)
+            try:
+                connection.send(message)
+            except ProtocolError:
+                raise ApplicationError.ERROR_SENDING
 
             logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} sent")
 
@@ -90,10 +102,16 @@ class Server:
     def handleClient(self, connection):
         self.logger.log(OutputVerbosity.VERBOSE, "Waiting for package with method settings")
 
-        message = connection.recv(HEADER_SIZE)
+        try:
+            message = connection.recv(HEADER_SIZE)
+        except ProtocolError:
+            raise ApplicationError.ERROR_RECEIVING
         (action, fileNameSize, filePathSize) = HeaderPackage.getSize(message)
 
-        message = connection.recv(fileNameSize + filePathSize)
+        try:
+            message = connection.recv(fileNameSize + filePathSize)
+        except ProtocolError:
+            raise ApplicationError.ERROR_RECEIVING
         package = HeaderPackage.deserialize(message, action, fileNameSize)
 
         actionName = "upload" if action == ActionMethod.UPLOAD else "download"
@@ -104,23 +122,19 @@ class Server:
 
             # Creando el directorio
             try:
-                os.makedirs(os.path.join(os.getcwd(), f"{self.dir}"), exist_ok=True)
+                os.makedirs(os.path.join(os.getcwd(), f"{self.dir}/{package.filePath}"), exist_ok=True)
             except Exception as e:
                 self.logger.log(OutputVerbosity.VERBOSE, f"Error creating directory: {e}")
                 
-            with open(f"{self.dir}/{package.fileName}", "wb") as file:
+            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "wb") as file:
                 Server.handleUpload(connection, file, self.logger)
         else:
             self.logger.log(OutputVerbosity.NORMAL, f"Sending file: {package.fileName}\n\tFrom: {package.filePath}")
-            fileSize = os.path.getsize(f"{self.dir}/{package.fileName}")
+            fileSize = os.path.getsize(f"{self.dir}/{package.filePath}/{package.fileName}")
 
-            with open(f"{self.dir}/{package.fileName}", "rb") as file:
+            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "rb") as file:
                 Server.handleDownload(connection, file, fileSize, self.logger)
 
-        # self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")
-        # connection.close()
-        # self.logger.log(OutputVerbosity.QUIET, "Closed connection with client")
-
-    def joinHandles(self):
-        for handle in self.handlers:
-            handle.join()
+        self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")
+        connection.close()
+        self.logger.log(OutputVerbosity.QUIET, "Closed connection with client")

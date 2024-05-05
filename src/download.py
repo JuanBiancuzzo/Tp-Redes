@@ -4,6 +4,10 @@ from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFo
 
 from lib.logger import Logger
 from lib.client import Client
+from lib.errors import ProtocolError, ApplicationError
+
+
+MAX_TRYS = 6
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
@@ -68,15 +72,31 @@ def main(parameter):
     logger = Logger(parameter.outputVerbosity)
     logger.log(OutputVerbosity.VERBOSE, "Initializing client download")
 
-    client = Client(
-        parameter.method,
-        logger,
-        parameter.host,
-        parameter.port
-    )
+    connectionEstablish = False
+    for _ in range(MAX_TRYS):
+        try:
+            client = Client(
+                parameter.method,
+                logger,
+                parameter.host,
+                parameter.port
+            )
+            connectionEstablish = True
+            break
+
+        except ProtocolError as protocolError:
+            if protocolError != ProtocolError.ERROR_HANDSHAKE:
+                raise protocolError
+
+    if not connectionEstablish:
+        logger.log(OutputVerbosity.QUIET, "Error while establishing with server")
+        return
 
     logger.log(OutputVerbosity.QUIET, "Connection established with server")
-    client.download(parameter.fileName, parameter.filePath)
+    try:
+        client.download(parameter.fileName, parameter.filePath)
+    except ApplicationError:
+        logger.log(OutputVerbosity.QUIET, "Error while downloading")
 
 if __name__ == "__main__":
     parameter = obtainParameters()

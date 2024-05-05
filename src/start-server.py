@@ -4,6 +4,7 @@ from lib.server import Server
 
 from lib.parameter import ServerParameter, OutputVerbosity, SendMethod, CustomFormatter
 from lib.logger import Logger
+from lib.errors import ProtocolError, ApplicationError
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
@@ -61,8 +62,11 @@ def obtainParameters():
         method = args.select_repeat if args.stop_wait is None else args.stop_wait
     )
 
-def handleClient(server, connection):
-    server.handleClient(connection)
+def handleClient(server, connection, logger):
+    try:
+        server.handleClient(connection)
+    except ApplicationError:
+        logger.log(OutputVerbosity.QUIET, "Error in communication with client")
 
 def main(parameter):
     logger = Logger(parameter.outputVerbosity)
@@ -77,21 +81,32 @@ def main(parameter):
     )
 
     logger.log(OutputVerbosity.QUIET, "Listening for connections")
-    
+    handles = []
+
     try:
         while True:
-            new_connection = server.listen()
+            try:
+                new_connection = server.listen()
+            except ProtocolError as protocolError:
+                if protocolError == ProtocolError.ERROR_HANDSHAKE:
+                    logger.log(OutputVerbosity.NORMAL, "Error in handshake")
+                    continue
+                else:
+                    raise protocolError
+            
             client_handler_handle = threading.Thread(
                 target = handleClient,
-                args = (server, new_connection)
+                args = (server, new_connection, logger)
             )
             
             client_handler_handle.start()
-            server.handlers.append(client_handler_handle)
+            handles.append(client_handler_handle)
             logger.log(OutputVerbosity.NORMAL, "New connection established")
+
     except KeyboardInterrupt:
         logger.log(OutputVerbosity.NORMAL, "\nServer stopped. Closing connections")
-        server.joinHandles()
+        for handle in handles:
+            handle.join()
 
 if __name__ == "__main__":
     parameter = obtainParameters()
