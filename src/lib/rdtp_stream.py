@@ -20,6 +20,8 @@ WINDOW_SIZE_SR = 5
 WINDOW_SIZE_SW = 1
 MAX_TIMEOUTS = 5
 
+MAX_SENDING_QUEUE = 10
+
 class RDTPStream:
 
     def __init__(self, socket, receiver_address, sequence_number, ack_number, method, logger):
@@ -39,7 +41,7 @@ class RDTPStream:
 
         self.logger = logger
 
-        self.send_queue = queue.Queue()
+        self.send_queue = queue.Queue(MAX_SENDING_QUEUE)
         self.received_queue = queue.Queue()
         self.close_queue = queue.Queue(maxsize = 1)
         
@@ -66,6 +68,9 @@ class RDTPStream:
         return segment
 
     def send_payload(self, timer):
+        if len(self.window.segments) > 10:
+            return None
+
         try:
             return self.send_queue.get(timeout = timer)
         except:
@@ -121,8 +126,12 @@ class RDTPStream:
         elif segment.header.seq_num == self.ack_number:
             self.logger.log(OutputVerbosity.VERBOSE, f"Received segment: {segment.header.seq_num}")
 
-            self.ack_number += len(segment.bytes)
-            self.received_queue.put(segment.bytes)
+            if not segment.header.ping:
+                self.ack_number += len(segment.bytes)
+                self.received_queue.put(segment.bytes)
+            else:
+                self.logger.log(OutputVerbosity.VERBOSE, f"Ping received")
+                self.ack_number += 1
             
             self.integrate_buffered_messages()
             
@@ -172,6 +181,26 @@ class RDTPStream:
 
         self.window.send_new_batch()
         self.sent_close_message = True
+
+    def send_ping_message(self):
+        """
+        Exception:
+            * ProtocolError.ERROR_PACKING
+            * ProtocolError.ERROR_SENDING_MESSAGE
+        """
+
+        self.logger.log(OutputVerbosity.VERBOSE, "Sending ping message")
+        fin_message = RDTPSegment.create_ping_message(
+            self.get_src_port(), 
+            self.get_destination_port(), 
+            self.sequence_number, 
+            self.ack_number
+        )
+
+        self.sequence_number += 1
+        self.window.add_segment(fin_message)
+
+        self.window.send_new_batch()
 
     def send(self, message: bytes):
         """

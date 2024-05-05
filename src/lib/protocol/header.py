@@ -1,18 +1,21 @@
 import struct
+from dataclasses import dataclass
+
 from lib.errors import ProtocolError
 
 HEADER_SIZE = 15
 
+@dataclass
 class Header:
-    def __init__(self, src_port, dst_port, seq_num, ack_num, data_len, syn, ack, fin):
-        self.src_port = src_port
-        self.dst_port = dst_port
-        self.seq_num = seq_num
-        self.ack_num = ack_num
-        self.data_len = data_len
-        self.syn = syn
-        self.ack = ack
-        self.fin = fin
+    src_port: int
+    dst_port: int
+    seq_num: int
+    ack_num: int
+    data_len: int
+    ping: bool
+    syn: bool
+    ack: bool
+    fin: bool
 
     def serialize(self):
         """
@@ -26,7 +29,7 @@ class Header:
         # L significa que es un unsigned long (4 bytes)
         # B significa que es un unsigned char (1 byte)
         # El orden en el que se pasan los argumentos es el orden en el que se empaquetarán
-        flags = (self.syn << 2) | (self.ack << 1) | (self.fin)
+        flags = (self.ping << 3) | (self.syn << 2) | (self.ack << 1) | (self.fin)
         try:
             return struct.pack(
                 '>HHLLHB', 
@@ -52,7 +55,8 @@ class Header:
         except struct.error:
             raise ProtocolError.ERROR_UNPACKING
 
+        ping = bool(flags & 0b1000)
         syn = bool(flags & 0b0100)
         ack = bool(flags & 0b0010)
         fin = bool(flags & 0b0001)
-        return cls(src_port, dst_port, seq_num, ack_num, data_len, syn, ack, fin)
+        return cls(src_port, dst_port, seq_num, ack_num, data_len, ping, syn, ack, fin)

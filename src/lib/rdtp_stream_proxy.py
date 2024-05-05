@@ -43,7 +43,7 @@ class RDTPStreamProxy:
             self.received_queue.task_done()
 
         return bytes(message)
-    
+
     def close(self):
         self.close_queue.put("CLOSE")
         self.stream_manager_handler.join()

@@ -27,7 +27,7 @@ class Window:
     # Si el tamaño no cambia me mandaron un ack de uno que ya me ackearon, por lo que se perdió el siguiente.
     def remove_acked_segments(self, ack_number) -> int:
         num_ack_remove = 0
-        while len(self.window) > 0 and self.window[0].header.seq_num < ack_number:
+        while len(self.window) > 0 and self.window[0][0].header.seq_num < ack_number:
             self.window.popleft()
             num_ack_remove += 1
 
@@ -52,8 +52,8 @@ class Window:
             except socket.error:
                 raise ProtocolError.ERROR_SENDING_MESSAGE
             
-            current_time = time.get_gettime_ns()
-            self.window.append((segment_to_send, current_time))
+            current_time_ns = time.time_ns()
+            self.window.append([segment_to_send, current_time_ns])
 
     def resend_oldest_segment(self):
         """
@@ -71,10 +71,14 @@ class Window:
             raise ProtocolError.ERROR_SENDING_MESSAGE
 
     def check_timeouts(self, current_time_ns) -> bool:
-        timeout_occur = current_time_ns - self.window[0][1] < TIMEOUT * 10**9
+        if len(self.window) == 0:
+            return False
 
-        # Actualizamos el timer del primer segmento en la ventana
-        self.window[0][1] = current_time_ns
+        timeout_occur = current_time_ns - self.window[0][1] > TIMEOUT * 10**9
+
+        if timeout_occur:
+            # Actualizamos el timer del primer segmento en la ventana
+            self.window[0][1] = current_time_ns        
 
         return timeout_occur
 

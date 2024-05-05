@@ -4,7 +4,7 @@ from lib.protocol.header import Header, HEADER_SIZE
 from lib.protocol.rdtp_segment import RDTPSegment
 from lib.logger import Logger
 from lib.parameter import OutputVerbosity
-from lib.rdtp_stream import TIMEOUT
+from lib.protocol.window import TIMEOUT
 from lib.manage_stream import create_stream
 
 from lib.errors import ProtocolError

@@ -78,7 +78,7 @@ def main(parameter):
     )
 
     logger.log(OutputVerbosity.QUIET, "Listening for connections")
-    handlers = []
+    handles = []
 
     try:
         while True:
@@ -96,12 +96,12 @@ def main(parameter):
             )
             
             client_handler_handle.start()
-            handlers.append(client_handler_handle)
+            handles.append(client_handler_handle)
             logger.log(OutputVerbosity.NORMAL, "New connection established")
 
     except KeyboardInterrupt:
         logger.log(OutputVerbosity.NORMAL, "\nServer stopped. Closing connections")
-        for handle in handlers:
+        for handle in handles:
             handle.join()
 
 if __name__ == "__main__":

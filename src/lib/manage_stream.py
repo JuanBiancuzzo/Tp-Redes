@@ -10,6 +10,7 @@ from lib.parameter import OutputVerbosity
 from lib.logger import Logger
 
 SELF_TIMEOUT = TIMEOUT / 10
+PING_TIME = TIMEOUT * 10
 
 def manage_stream(stream: RDTPStream, logger: Logger):
     """
@@ -20,21 +21,26 @@ def manage_stream(stream: RDTPStream, logger: Logger):
         * ProtocolError.ERROR_SENDING_MESSAGE
         * ProtocolError.ERROR_RECEIVING_MESSAGE
     """
+    ping_time_ns = time.time_ns()
 
     while not (stream.sent_close_message and stream.received_close_message):
 
         # chequea todos los timers de los send message y hace la logica que sea necesaria
         # Que se tenga un número de timeout repetidos
-        current_time_ns = time.get_gettime_ns()
+        current_time_ns = time.time_ns()
         try:
             stream.check_times(current_time_ns)
         except ProtocolError as protocolError:
             if protocolError == ProtocolError.ERROR_RECEIVING_END_DEAD:
-                logger.log(OutputVerbosity.ERROR, "Connection dead")
+                logger.log(OutputVerbosity.QUIET, "Connection dead")
                 break
             else:
                 raise protocolError
         
+        if current_time_ns - ping_time_ns > PING_TIME * 10**9:
+            stream.send_ping_message()
+            ping_time_ns = current_time_ns
+
         segment = stream.recv_segment(SELF_TIMEOUT)
         if segment is not None:
             stream.recv(segment)
