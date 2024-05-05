@@ -1,8 +1,11 @@
 import socket
 from collections import deque
+import time
 
 from lib.errors import ProtocolError
 from lib.parameter import OutputVerbosity
+
+TIMEOUT = 1
 
 class Window:
     def __init__(self, size: int, socket, receiver_address, logger):
@@ -12,7 +15,7 @@ class Window:
         
         self.socket = socket
         self.receiver_address = receiver_address
-        
+
         self.logger = logger
     
     def max(self):
@@ -49,7 +52,8 @@ class Window:
             except socket.error:
                 raise ProtocolError.ERROR_SENDING_MESSAGE
             
-            self.window.append(segment_to_send)
+            current_time = time.get_gettime_ns()
+            self.window.append((segment_to_send, current_time))
 
     def resend_oldest_segment(self):
         """
@@ -66,6 +70,14 @@ class Window:
         except socket.error:
             raise ProtocolError.ERROR_SENDING_MESSAGE
 
+    def check_timeouts(self, current_time_ns) -> bool:
+        timeout_occur = current_time_ns - self.window[0][1] < TIMEOUT * 10**9
+
+        # Actualizamos el timer del primer segmento en la ventana
+        self.window[0][1] = current_time_ns
+
+        return timeout_occur
+
     def empty(self):
         return len(self.window) + len(self.segments) == 0
 
@@ -73,4 +85,4 @@ class Window:
         return len(self.window) >= self.size
 
     def get_oldest_segment(self):
-        return self.window[0] if len(self.window) > 0 else None
+        return self.window[0][0] if len(self.window) > 0 else None

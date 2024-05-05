@@ -18,8 +18,7 @@ MAX_MSG = (1500 - 20 - 8) * 5
 MAX_PAYLOAD = MAX_MSG - HEADER_SIZE
 WINDOW_SIZE_SR = 5
 WINDOW_SIZE_SW = 1
-
-TIMEOUT = 1
+MAX_TIMEOUTS = 5
 
 class RDTPStream:
 
@@ -46,6 +45,8 @@ class RDTPStream:
         
         self.sent_close_message = False
         self.received_close_message = False
+
+        self.num_timeouts = 0
     
     def recv_segment(self, timer):
         """
@@ -85,6 +86,8 @@ class RDTPStream:
             if segments_remove > 0:
                 self.logger.log(OutputVerbosity.VERBOSE, f"Received new ack message, sending new batch of segments")
                 self.window.send_new_batch()
+                self.num_timeouts = 0
+
             else:
                 self.logger.log(OutputVerbosity.VERBOSE, f"Received repeated ack message, re-sending oldest segment in window")
                 self.window.resend_oldest_segment()
@@ -219,8 +222,19 @@ class RDTPStream:
             self.ack_number += len(message_to_add.bytes)
             self.logger.log(OutputVerbosity.VERBOSE, f"Ack number updated to: {self.ack_number}")
 
+    def check_times(self, current_time_ns):        
+        if self.window.check_timeouts(current_time_ns):
+            self.num_timeouts += 1
+
+            if self.num_timeouts >= MAX_TIMEOUTS:
+                raise ProtocolError.ERROR_RECEIVING_END_DEAD  
+
+            self.logger.log(OutputVerbosity.VERBOSE, f"Timeout, re-sending oldest segment in window")
+            self.window.resend_oldest_segment()
+
     def get_src_port(self):
         return self.socket.getsockname()[PORT_INDEX]
     
     def get_destination_port(self):
         return self.receiver_address[PORT_INDEX]
+    

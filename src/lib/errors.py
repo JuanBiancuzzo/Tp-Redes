@@ -11,6 +11,7 @@ class ProtocolError(Exception, Enum):
     ERROR_SENDING_MESSAGE = 8
     ERROR_RECEIVING_MESSAGE = 9
     ERROR_CREATING_STREAM_THREAD = 10
+    ERROR_RECEIVING_END_DEAD = 11
 
 class AplicationError(Exception, Enum):
     ERROR_CONNECTION = 1
