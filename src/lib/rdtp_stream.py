@@ -32,7 +32,10 @@ class RDTPStream:
         self.message_buffer = {}
 
         self.window = Window(
-            WINDOW_SIZE_SR if method == SendMethod.SELECTIVE_REPEAT else WINDOW_SIZE_SW
+            WINDOW_SIZE_SR if method == SendMethod.SELECTIVE_REPEAT else WINDOW_SIZE_SW,
+            socket,
+            receiver_address,
+            logger,
         )
 
         self.logger = logger

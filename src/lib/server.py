@@ -115,6 +115,6 @@ class Server:
             with open(f"{self.dir}/{package.filePath}/{package.fileName}", "rb") as file:
                 Server.handleDownload(connection, file, fileSize, self.logger)
 
-        # self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")
-        # connection.close()
-        # self.logger.log(OutputVerbosity.QUIET, "Closed connection with client")
+        self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")
+        connection.close()
+        self.logger.log(OutputVerbosity.QUIET, "Closed connection with client")

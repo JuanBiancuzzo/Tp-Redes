@@ -5,10 +5,15 @@ from lib.errors import ProtocolError
 from lib.parameter import OutputVerbosity
 
 class Window:
-    def __init__(self, size: int):
+    def __init__(self, size: int, socket, receiver_address, logger):
         self.size = size
         self.window = deque()
         self.segments = deque()
+        
+        self.socket = socket
+        self.receiver_address = receiver_address
+        
+        self.logger = logger
     
     def max(self):
         return self.size
@@ -34,7 +39,7 @@ class Window:
             * ProtocolError.ERROR_SENDING_MESSAGE
         '''
 
-        while not self.window.is_full() and len(self.segments) > 0:
+        while not self.window_is_full() and len(self.segments) > 0:
             segment_to_send = self.segments.popleft()
 
             self.logger.log(OutputVerbosity.VERBOSE, f"Sent segment: {segment_to_send.header.seq_num}")
@@ -64,7 +69,7 @@ class Window:
     def empty(self):
         return len(self.window) + len(self.segments) == 0
 
-    def is_full(self):
+    def window_is_full(self):
         return len(self.window) >= self.size
 
     def get_oldest_segment(self):
