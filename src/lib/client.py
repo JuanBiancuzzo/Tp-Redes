@@ -89,6 +89,7 @@ class Client:
         logger.log(OutputVerbosity.VERBOSE, "Receiving file size")
         message = connection.recv(FILE_SIZE_SIZE)
         fileSize = struct.unpack(FORMAT, message)[0]
+
         logger.log(OutputVerbosity.VERBOSE, f"File to save of size: {calculateSizeString(fileSize)}")
 
         logger.log(OutputVerbosity.NORMAL, "Receiving file from server")
