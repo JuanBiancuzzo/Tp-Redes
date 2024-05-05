@@ -1,4 +1,4 @@
-from socket import socket, AF_INET, SOCK_DGRAM
+from socket import socket, AF_INET, SOCK_DGRAM, timeout, error as SocketError
 
 from lib.protocol.header import Header, HEADER_SIZE
 from lib.protocol.rdtp_segment import RDTPSegment
@@ -37,7 +37,7 @@ class RDTP:
         
         try:
             self.socket.sendto(syn_message.serialize(), (dest_ip, dest_port))
-        except socket.error:
+        except SocketError:
             raise ProtocolError.ERROR_SENDING_MESSAGE
 
         self.logger.log(OutputVerbosity.VERBOSE, f"Syn message sent to: {dest_ip}:{dest_port}")
@@ -47,9 +47,9 @@ class RDTP:
 
             message, server_address = self.socket.recvfrom(HEADER_SIZE)
             self.socket.settimeout(None)
-        except socket.timeout:
+        except timeout:
             raise ProtocolError.ERROR_HANDSHAKE
-        except socket.error:
+        except SocketError:
             raise ProtocolError.ERROR_RECEIVING_MESSAGE
 
         self.logger.log(OutputVerbosity.VERBOSE, "Received syn-ack message")
@@ -68,7 +68,7 @@ class RDTP:
 
             try:
                 self.socket.sendto(ack_ack_message.serialize(), server_address)
-            except socket.error:
+            except SocketError:
                 raise ProtocolError.ERROR_SENDING_MESSAGE
 
             self.logger.log(OutputVerbosity.VERBOSE, "Ack-Ack message sent")
@@ -81,35 +81,47 @@ class RDTP:
     # Para el servidor
     def accept(self, ip, port):
         try:
-            
             message, client_address = self.socket.recvfrom(HEADER_SIZE)
-            self.logger.log(OutputVerbosity.VERBOSE, "Server: Syn message received")
-            header = Header.deserialize(message)
-            
-            if header.syn:
-                
-                sequence_number = RDTP.generate_initial_sequence_number()
-                ack_number = header.seq_num + 1
-                dest_port = client_address[SRC_PORT_INDEX]
+        except SocketError:
+            raise ProtocolError.ERROR_RECEIVING_MESSAGE
+        
+        self.logger.log(OutputVerbosity.VERBOSE, "Server: Syn message received")
+        header = Header.deserialize(message)
+        
+        if not header.syn:
+            raise ProtocolError.ERROR_HANDSHAKE
+        
+        sequence_number = RDTP.generate_initial_sequence_number()
+        ack_number = header.seq_num + 1
+        dest_port = client_address[SRC_PORT_INDEX]
 
-                new_client_socket = socket(AF_INET, SOCK_DGRAM)
-                new_client_socket.bind((ip, 0))
-                new_port = new_client_socket.getsockname()[SRC_PORT_INDEX]
-                
-                syn_ack_message = RDTPSegment.create_syn_ack_message(new_port, dest_port, sequence_number, ack_number)
-                self.socket.sendto(syn_ack_message.serialize(), client_address)
-                self.logger.log(OutputVerbosity.VERBOSE, "Server: Syn-Ack message sent")
-                
-                message, client_address = new_client_socket.recvfrom(HEADER_SIZE)
-                self.logger.log(OutputVerbosity.VERBOSE, "Server: Ack-Ack message received")
-                header = Header.deserialize(message)
-                
-                if header.ack:
-                    return create_stream(new_client_socket, client_address, sequence_number + 1, ack_number, self.method, self.logger)
-                
-            return None
-        except Exception as e:
-            raise e
+        new_client_socket = socket(AF_INET, SOCK_DGRAM)
+        new_client_socket.settimeout(TIMEOUT)
+
+        new_client_socket.bind((ip, 0))
+        new_port = new_client_socket.getsockname()[SRC_PORT_INDEX]
+        
+        syn_ack_message = RDTPSegment.create_syn_ack_message(new_port, dest_port, sequence_number, ack_number)
+        try:
+            self.socket.sendto(syn_ack_message.serialize(), client_address)
+        except SocketError:
+            raise ProtocolError.ERROR_SENDING_MESSAGE
+        
+        self.logger.log(OutputVerbosity.VERBOSE, "Server: Syn-Ack message sent")
+        try:
+            message, client_address = new_client_socket.recvfrom(HEADER_SIZE)
+        except timeout:
+            raise ProtocolError.ERROR_HANDSHAKE
+        except SocketError:
+            raise ProtocolError.ERROR_RECEIVING_MESSAGE
+        
+        self.logger.log(OutputVerbosity.VERBOSE, "Server: Ack-Ack message received")
+        header = Header.deserialize(message)
+        
+        if not header.ack:
+            raise ProtocolError.ERROR_HANDSHAKE
+        
+        return create_stream(new_client_socket, client_address, sequence_number + 1, ack_number, self.method, self.logger)
 
     def bind(self, ip, port):
         self.socket.bind((ip, port))

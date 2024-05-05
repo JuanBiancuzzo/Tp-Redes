@@ -1,4 +1,4 @@
-import socket
+from socket import error as SocketError
 from collections import deque
 import time
 
@@ -49,7 +49,7 @@ class Window:
 
             try:
                 self.socket.sendto(segment_to_send.serialize(), self.receiver_address)
-            except socket.error:
+            except SocketError:
                 raise ProtocolError.ERROR_SENDING_MESSAGE
             
             current_time_ns = time.time_ns()
@@ -67,7 +67,7 @@ class Window:
         
         try:
             self.socket.sendto(oldest_segment.serialize(), self.receiver_address)    
-        except socket.error:
+        except SocketError:
             raise ProtocolError.ERROR_SENDING_MESSAGE
 
     def check_timeouts(self, current_time_ns) -> bool:

@@ -1,4 +1,4 @@
-import socket
+from socket import timeout, socket, error as SocketError
 from collections import deque
 from math import ceil
 import queue
@@ -18,7 +18,7 @@ MAX_MSG = (1500 - 20 - 8) * 5
 MAX_PAYLOAD = MAX_MSG - HEADER_SIZE
 WINDOW_SIZE_SR = 5
 WINDOW_SIZE_SW = 1
-MAX_TIMEOUTS = 5
+MAX_TIMEOUTS = 10
 
 MAX_SENDING_QUEUE = 10
 
@@ -60,7 +60,7 @@ class RDTPStream:
         try:
             message, _ = self.socket.recvfrom(MAX_MSG)
             segment = RDTPSegment.deserialize(message) 
-        except socket.timeout:
+        except timeout:
             pass
 
         self.socket.settimeout(None)
@@ -114,7 +114,7 @@ class RDTPStream:
 
             try:
                 self.socket.sendto(fin_ack_message.serialize(), self.receiver_address)
-            except socket.error:
+            except SocketError:
                 raise ProtocolError.ERROR_SENDING_MESSAGE      
 
             self.logger.log(OutputVerbosity.VERBOSE, f"Fin-ack message sent {fin_ack_message.header.ack_num}")
@@ -143,7 +143,7 @@ class RDTPStream:
             
             try:
                 self.socket.sendto(ack_message.serialize(), self.receiver_address)
-            except socket.error:
+            except SocketError:
                 raise ProtocolError.ERROR_SENDING_MESSAGE
         
         else:
@@ -158,6 +158,10 @@ class RDTPStream:
                 self.ack_number
             )
             self.logger.log(OutputVerbosity.VERBOSE, f"Received message with wrong sequence number. Ack sent: {repeated_ack_message.header.ack_num}")
+            try:
+                self.socket.sendto(repeated_ack_message.serialize(), self.receiver_address)
+            except SocketError:
+                raise ProtocolError.ERROR_SENDING_MESSAGE
 
     def send_fin_message(self):
         """

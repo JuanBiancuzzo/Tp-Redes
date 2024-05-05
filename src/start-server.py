@@ -89,6 +89,7 @@ def main(parameter):
                 new_connection = server.listen()
             except ProtocolError as protocolError:
                 if protocolError == ProtocolError.ERROR_HANDSHAKE:
+                    logger.log(OutputVerbosity.NORMAL, "Error in handshake")
                     continue
                 else:
                     raise protocolError
