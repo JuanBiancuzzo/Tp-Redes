@@ -24,7 +24,7 @@ MAX_SENDING_QUEUE = 10
 
 class RDTPStream:
 
-    def __init__(self, socket, receiver_address, sequence_number, ack_number, method, logger):
+    def __init__(self, socket, receiver_address, sequence_number, ack_number, received_pipe, send_pipe,  method, logger):
         self.socket = socket
         self.receiver_address = receiver_address
         self.sequence_number = sequence_number
@@ -40,9 +40,8 @@ class RDTPStream:
         )
 
         self.logger = logger
-
-        self.send_queue = queue.Queue(MAX_SENDING_QUEUE)
-        self.received_queue = queue.Queue()
+        self.received_pipe = received_pipe
+        self.send_pipe = send_pipe
         self.close_queue = queue.Queue(maxsize = 1)
         
         self.sent_close_message = False
@@ -71,10 +70,9 @@ class RDTPStream:
         if len(self.window.segments) > 10:
             return None
 
-        try:
-            return self.send_queue.get(timeout = timer)
-        except:
-            return None
+        if self.send_pipe.poll(timer):
+            return self.send_pipe.recv()
+        return None
 
     def recv(self, segment: RDTPSegment):
         """
@@ -128,7 +126,7 @@ class RDTPStream:
 
             if not segment.header.ping:
                 self.ack_number += len(segment.bytes)
-                self.received_queue.put(segment.bytes)
+                self.received_pipe.send(segment.bytes)
             else:
                 self.logger.log(OutputVerbosity.VERBOSE, f"Ping received")
                 self.ack_number += 1
@@ -245,7 +243,7 @@ class RDTPStream:
             message_to_add = self.message_buffer[self.ack_number]
                 
             self.logger.log(OutputVerbosity.VERBOSE, f"Segment integrated {message_to_add.header.seq_num}")
-            self.received_queue.put(message_to_add.bytes)
+            self.received_pipe.send(message_to_add.bytes)
             del self.message_buffer[self.ack_number]
             
             self.ack_number += len(message_to_add.bytes)

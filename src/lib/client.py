@@ -5,7 +5,7 @@ import struct
 from lib.rdtp import RDTP
 from lib.parameter import ActionMethod, OutputVerbosity
 from lib.protocol.header_package import HeaderPackage
-from lib.errors import ProtocolError, AplicationError
+from lib.errors import ProtocolError, ApplicationError
 
 FILE_SIZE_SIZE = 8
 
@@ -41,13 +41,19 @@ class Client:
         )
 
         logger.log(OutputVerbosity.VERBOSE, "Sending package with upload settings")
-        connection.send(infoPackage.serialize())
+        try:
+            connection.send(infoPackage.serialize())
+        except ProtocolError:
+            raise ApplicationError.ERROR_SENDING
         logger.log(OutputVerbosity.NORMAL, "Package with upload settings sent")
 
     @classmethod
     def uploadFile(cls, connection, file, fileSize, logger):
         logger.log(OutputVerbosity.VERBOSE, "Sending file size")
-        connection.send(struct.pack(FORMAT, fileSize))
+        try:
+            connection.send(struct.pack(FORMAT, fileSize))
+        except ProtocolError:
+            raise ApplicationError.ERROR_SENDING
         logger.log(OutputVerbosity.VERBOSE, "File size sent")
 
         split = min(FILE_SPLIT, fileSize)
@@ -55,7 +61,10 @@ class Client:
         logger.log(OutputVerbosity.NORMAL, "Uploading file to server")
         while fileSize > 0:
             message = file.read(split)
-            connection.send(message)
+            try:
+                connection.send(message)
+            except ProtocolError:
+                raise ApplicationError.ERROR_SENDING
 
             logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} sent")
 
@@ -87,7 +96,10 @@ class Client:
     @classmethod
     def downloadFile(cls, connection, file, logger):
         logger.log(OutputVerbosity.VERBOSE, "Receiving file size")
-        message = connection.recv(FILE_SIZE_SIZE)
+        try:
+            message = connection.recv(FILE_SIZE_SIZE)
+        except ProtocolError:
+            raise ApplicationError.ERROR_RECEIVING
         fileSize = struct.unpack(FORMAT, message)[0]
 
         logger.log(OutputVerbosity.VERBOSE, f"File to save of size: {calculateSizeString(fileSize)}")
@@ -95,7 +107,10 @@ class Client:
         logger.log(OutputVerbosity.NORMAL, "Receiving file from server")
         split = min(FILE_SPLIT, fileSize)
         while fileSize > 0:
-            message = connection.recv(split)
+            try:
+                message = connection.recv(split)
+            except ProtocolError:
+                raise ApplicationError.ERROR_RECEIVING
 
             logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} received")
 

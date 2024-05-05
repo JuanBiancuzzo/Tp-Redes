@@ -4,7 +4,7 @@ from lib.server import Server
 
 from lib.parameter import ServerParameter, OutputVerbosity, SendMethod, CustomFormatter
 from lib.logger import Logger
-from lib.errors import ProtocolError
+from lib.errors import ProtocolError, ApplicationError
 
 def obtainParameters():
     parser = argparse.ArgumentParser(
@@ -62,8 +62,11 @@ def obtainParameters():
         method = args.select_repeat if args.stop_wait is None else args.stop_wait
     )
 
-def handleClient(server, connection):
-    server.handleClient(connection)                
+def handleClient(server, connection, logger):
+    try:
+        server.handleClient(connection)
+    except ApplicationError:
+        logger.log(OutputVerbosity.QUIET, "Error in communication with client")
 
 def main(parameter):
     logger = Logger(parameter.outputVerbosity)
@@ -92,7 +95,7 @@ def main(parameter):
             
             client_handler_handle = threading.Thread(
                 target = handleClient,
-                args = (server, new_connection)
+                args = (server, new_connection, logger)
             )
             
             client_handler_handle.start()

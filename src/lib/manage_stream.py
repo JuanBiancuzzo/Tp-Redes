@@ -1,5 +1,6 @@
 import threading
 import time
+from multiprocessing import Pipe
 
 from lib.errors import ProtocolError
 from lib.rdtp_stream_proxy import RDTPStreamProxy
@@ -54,12 +55,16 @@ def manage_stream(stream: RDTPStream, logger: Logger):
             _ = stream.close_queue.get()
     
     logger.log(OutputVerbosity.VERBOSE, "Closing stream")
+
+    stream.received_pipe.close()
+    stream.send_pipe.close()
         
 def create_stream(socket, receiver_address, sequence_number, ack_number, method, logger):
 
-    stream = RDTPStream(socket, receiver_address, sequence_number, ack_number, method, logger)
-    received_queue = stream.received_queue
-    send_queue = stream.send_queue
+    parent_recv_pipe, child_recv_pipe = Pipe(False)
+    parent_send_pipe, child_send_pipe = Pipe(False)
+
+    stream = RDTPStream(socket, receiver_address, sequence_number, ack_number, child_recv_pipe, parent_send_pipe,  method, logger)
     close_queue = stream.close_queue
 
     stream_manager_handler = threading.Thread(
@@ -72,4 +77,4 @@ def create_stream(socket, receiver_address, sequence_number, ack_number, method,
     except:
         raise ProtocolError.ERROR_CREATING_STREAM_THREAD        
 
-    return RDTPStreamProxy(received_queue, send_queue, close_queue, stream_manager_handler)
+    return RDTPStreamProxy(parent_recv_pipe, child_send_pipe, close_queue, stream_manager_handler)

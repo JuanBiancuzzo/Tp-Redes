@@ -4,7 +4,7 @@ from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFo
 
 from lib.logger import Logger
 from lib.client import Client
-from lib.errors import ProtocolError, AplicationError
+from lib.errors import ProtocolError, ApplicationError
 
 
 MAX_TRYS = 6
@@ -89,10 +89,14 @@ def main(parameter):
                 raise protocolError
 
     if not connectionEstablish:
-        raise AplicationError.ERROR_CONNECTION
+        logger.log(OutputVerbosity.QUIET, "Error while establishing with server")
+        return
 
     logger.log(OutputVerbosity.QUIET, "Connection established with server")
-    client.download(parameter.fileName, parameter.filePath)
+    try:
+        client.download(parameter.fileName, parameter.filePath)
+    except ApplicationError:
+        logger.log(OutputVerbosity.QUIET, "Error while downloading")
 
 if __name__ == "__main__":
     parameter = obtainParameters()

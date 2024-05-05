@@ -1,9 +1,12 @@
+from lib.errors import ProtocolError
+
+RECEIVED_TIMER = 1
 
 class RDTPStreamProxy:
 
-    def __init__(self, received_queue, send_queue, close_queue, stream_manager_handler):
-        self.send_queue = send_queue
-        self.received_queue = received_queue
+    def __init__(self, received_pipe, send_pipe, close_queue, stream_manager_handler):
+        self.send_pipe = send_pipe
+        self.received_pipe = received_pipe
         self.close_queue = close_queue
         
         self.stream_manager_handler = stream_manager_handler
@@ -11,7 +14,7 @@ class RDTPStreamProxy:
         self.incomplete_received = None
 
     def send(self, message: bytes):
-        self.send_queue.put(message)
+        self.send_pipe.send(message)
 
     def recv(self, size: int):
         message = bytearray()
@@ -29,7 +32,7 @@ class RDTPStreamProxy:
                 self.incomplete_received = None
 
         while size > 0:
-            received_message = self.received_queue.get()
+            received_message = self.receive()
 
             length_received = len(received_message)
             size_of_read = min(size, length_received)
@@ -40,10 +43,17 @@ class RDTPStreamProxy:
             if length_received > size_of_read:
                 self.incomplete_received = received_message[size_of_read:]
 
-            self.received_queue.task_done()
-
         return bytes(message)
+    
+    def receive(self):
+        while not self.received_pipe.poll(RECEIVED_TIMER):
+            pass
 
+        try:
+            return self.received_pipe.recv()
+        except:
+            raise ProtocolError.ERROR_CONNECTION_ENDED
+    
     def close(self):
         self.close_queue.put("CLOSE")
         self.stream_manager_handler.join()
