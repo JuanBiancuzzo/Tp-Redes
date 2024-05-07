@@ -1,4 +1,5 @@
 import argparse
+import time
 
 from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
 
@@ -93,10 +94,18 @@ def main(parameter):
         return
 
     logger.log(OutputVerbosity.QUIET, "Connection established with server")
+
+    startTime = time.time_ns()
+
     try:
         client.upload(parameter.fileName, parameter.filePath)
     except ApplicationError:
         logger.log(OutputVerbosity.QUIET, "Error while uploading")
+        return
+
+    endTime = time.time_ns()
+    completedTime = (endTime - startTime) * 10**-9
+    logger.log(OutputVerbosity.QUIET, "Upload completed in {:.2f} s".format(completedTime))
 
 if __name__ == "__main__":
     parameter = obtainParameters()

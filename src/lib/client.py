@@ -10,8 +10,7 @@ from lib.errors import ProtocolError, ApplicationError
 FILE_SIZE_SIZE = 8
 
 FORMAT = '>Q' # 8 bytes
-# FILE_SPLIT = 2**28 # 250 Mbytes 
-FILE_SPLIT = 2**58
+FILE_SPLIT = 2**28 # 250 Mbytes 
 
 def calculateSizeString(numBytes):
     if numBytes < 2**10:
