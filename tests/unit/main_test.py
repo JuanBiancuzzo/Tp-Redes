@@ -1,3 +1,7 @@
+from lib.parameter import ActionMethod
+from lib.protocol.header_package import HeaderPackage, HEADER_SIZE
+from lib.client import Client
+from lib.server import Server, FILE_SPLIT
 import unittest
 
 import os
@@ -9,16 +13,11 @@ sys.path.append(os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..', 'src')
 ))
 
-from lib.server import Server, FILE_SPLIT
-from lib.client import Client
-from lib.protocol.header_package import HeaderPackage, HEADER_SIZE
-from lib.parameter import ActionMethod
 
 class MockConnection:
     def __init__(self, content=b""):
         self.contentToSend = content
         self.contentRecv = b""
-
 
     def send(self, message):
         self.contentRecv += message
@@ -27,6 +26,7 @@ class MockConnection:
         content = self.contentToSend[:size]
         self.contentToSend = self.contentToSend[size:]
         return content
+
 
 class MockFile:
     def __init__(self, content=b""):
@@ -43,12 +43,14 @@ class MockFile:
         self.contentToSend = self.contentToSend[size:]
         return content
 
+
 class MockLogger:
     def __init__(self):
         pass
 
     def log(self, verbosity, message):
         pass
+
 
 class TestUpload(unittest.TestCase):
 
@@ -63,7 +65,11 @@ class TestUpload(unittest.TestCase):
 
     def test02ShortFileServer(self):
         fileString = b"hola tanto tiempo"
-        connection = MockConnection(struct.pack('>Q', len(fileString)) + fileString)
+        connection = MockConnection(
+            struct.pack(
+                '>Q',
+                len(fileString)) +
+            fileString)
         file = MockFile()
         logger = MockLogger()
 
@@ -77,7 +83,11 @@ class TestUpload(unittest.TestCase):
         while len(fileString) < FILE_SPLIT:
             fileString += fileString
 
-        connection = MockConnection(struct.pack('>Q', len(fileString)) + fileString)
+        connection = MockConnection(
+            struct.pack(
+                '>Q',
+                len(fileString)) +
+            fileString)
         file = MockFile()
         logger = MockLogger()
 
@@ -104,7 +114,12 @@ class TestUpload(unittest.TestCase):
 
         Client.uploadFile(connection, file, len(fileString), logger)
 
-        self.assertEqual(connection.contentRecv, struct.pack('>Q', len(fileString)) + fileString)
+        self.assertEqual(
+            connection.contentRecv,
+            struct.pack(
+                '>Q',
+                len(fileString)) +
+            fileString)
 
     def test06LongFileClient(self):
         fileString = b"hola tanto tiempo"
@@ -118,7 +133,12 @@ class TestUpload(unittest.TestCase):
 
         Client.uploadFile(connection, file, len(fileString), logger)
 
-        self.assertEqual(connection.contentRecv, struct.pack('>Q', len(fileString)) + fileString)
+        self.assertEqual(
+            connection.contentRecv,
+            struct.pack(
+                '>Q',
+                len(fileString)) +
+            fileString)
 
     def test07InfoPackageClient(self):
         connection = MockConnection()
@@ -137,13 +157,14 @@ class TestUpload(unittest.TestCase):
         self.assertEqual(actionRecv.value, action.value)
         self.assertEqual(len(filename), fileNameSize)
         self.assertEqual(len(filepath), filePathSize)
-        
+
         data = connection.contentRecv[HEADER_SIZE:]
 
         infoPackage = HeaderPackage.deserialize(data, action, fileNameSize)
 
         self.assertEqual(infoPackage.fileName, filename)
         self.assertEqual(infoPackage.filePath, filepath)
+
 
 class TestDownload(unittest.TestCase):
 
@@ -158,7 +179,11 @@ class TestDownload(unittest.TestCase):
 
     def test02ShortFileClient(self):
         fileString = b"hola tanto tiempo"
-        connection = MockConnection(struct.pack('>Q', len(fileString)) + fileString)
+        connection = MockConnection(
+            struct.pack(
+                '>Q',
+                len(fileString)) +
+            fileString)
         file = MockFile()
         logger = MockLogger()
 
@@ -172,7 +197,11 @@ class TestDownload(unittest.TestCase):
         while len(fileString) < FILE_SPLIT:
             fileString += fileString
 
-        connection = MockConnection(struct.pack('>Q', len(fileString)) + fileString)
+        connection = MockConnection(
+            struct.pack(
+                '>Q',
+                len(fileString)) +
+            fileString)
         file = MockFile()
         logger = MockLogger()
 
@@ -199,7 +228,12 @@ class TestDownload(unittest.TestCase):
 
         Server.handleDownload(connection, file, len(fileString), logger)
 
-        self.assertEqual(connection.contentRecv, struct.pack('>Q', len(fileString)) + fileString)
+        self.assertEqual(
+            connection.contentRecv,
+            struct.pack(
+                '>Q',
+                len(fileString)) +
+            fileString)
 
     def test06LongFileServer(self):
         fileString = b"hola tanto tiempo"
@@ -213,7 +247,13 @@ class TestDownload(unittest.TestCase):
 
         Server.handleDownload(connection, file, len(fileString), logger)
 
-        self.assertEqual(connection.contentRecv, struct.pack('>Q', len(fileString)) + fileString)
+        self.assertEqual(
+            connection.contentRecv,
+            struct.pack(
+                '>Q',
+                len(fileString)) +
+            fileString)
+
 
 if __name__ == '__main__':
     unittest.main()

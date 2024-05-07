@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class ProtocolError(Exception, Enum):
     ERROR_HANDSHAKE = 1
     ERROR_ENCODING_FILE_DATA = 2
@@ -14,7 +15,7 @@ class ProtocolError(Exception, Enum):
     ERROR_RECEIVING_END_DEAD = 11
     ERROR_CONNECTION_ENDED = 12
 
+
 class ApplicationError(Exception, Enum):
     ERROR_SENDING = 1
     ERROR_RECEIVING = 2
-

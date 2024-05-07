@@ -1,5 +1,6 @@
 from lib.parameter import OutputVerbosity
 
+
 class Logger:
     def __init__(self, verbosity: OutputVerbosity):
         self.verbosity = verbosity

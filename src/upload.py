@@ -1,7 +1,8 @@
 import argparse
 import time
 
-from lib.parameter import ClientParameter, OutputVerbosity, SendMethod, CustomFormatter
+from lib.parameter import ClientParameter, OutputVerbosity
+from lib.parameter import SendMethod, CustomFormatter
 
 from lib.logger import Logger
 from lib.client import Client
@@ -10,49 +11,71 @@ from lib.errors import ProtocolError, ApplicationError
 
 MAX_TRYS = 6
 
+
 def obtainParameters():
     parser = argparse.ArgumentParser(
-        prog = "upload", 
-        description = "Default description",
+        prog="upload",
+        description="Default description",
         formatter_class=CustomFormatter,
     )
 
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument(
-        "-v", "--verbose", 
-        action = "store_const", 
-        const = OutputVerbosity.VERBOSE,
-        help = "increase output verbosity"
+        "-v", "--verbose",
+        action="store_const",
+        const=OutputVerbosity.VERBOSE,
+        help="increase output verbosity"
     )
     verbosity.add_argument(
-        "-q", "--quiet", 
-        action = "store_const",
-        const = OutputVerbosity.QUIET,
-        help = "decrease output verbosity"
+        "-q", "--quiet",
+        action="store_const",
+        const=OutputVerbosity.QUIET,
+        help="decrease output verbosity"
     )
 
-    parser.add_argument("-H", "--host", default="localhost", dest="addr", help="server IP address")
-    parser.add_argument("-p", "--port", default=1234, dest="port", type=int, help="server port")
+    parser.add_argument(
+        "-H",
+        "--host",
+        default="localhost",
+        dest="addr",
+        help="server IP address")
+    parser.add_argument(
+        "-p",
+        "--port",
+        default=1234,
+        dest="port",
+        type=int,
+        help="server port")
 
-    parser.add_argument("-s", "--src", default=".", dest="filepath", help="source file path")
-    parser.add_argument("-n", "--name", default="", dest="filename", help="name file name")
+    parser.add_argument(
+        "-s",
+        "--src",
+        default=".",
+        dest="filepath",
+        help="source file path")
+    parser.add_argument(
+        "-n",
+        "--name",
+        default="",
+        dest="filename",
+        help="name file name")
 
     method = parser.add_mutually_exclusive_group()
     method.add_argument(
-        "-r", "--select-repeat", 
-        action = "store_const",
-        const = SendMethod.SELECTIVE_REPEAT,
-        default = SendMethod.SELECTIVE_REPEAT,
-        help = "selective repeat method (default)"
+        "-r", "--select-repeat",
+        action="store_const",
+        const=SendMethod.SELECTIVE_REPEAT,
+        default=SendMethod.SELECTIVE_REPEAT,
+        help="selective repeat method (default)"
     )
     method.add_argument(
-        "-w", "--stop-wait", 
-        action = "store_const", 
-        const = SendMethod.STOP_WAIT,
-        help = "stop and wait method"
+        "-w", "--stop-wait",
+        action="store_const",
+        const=SendMethod.STOP_WAIT,
+        help="stop and wait method"
     )
 
-    args = parser.parse_args() # Sale completamente 
+    args = parser.parse_args()  # Sale completamente
 
     outputVerbosity = OutputVerbosity.NORMAL
     if args.verbose is not None:
@@ -62,12 +85,13 @@ def obtainParameters():
 
     return ClientParameter(
         outputVerbosity,
-        host = args.addr,
-        port = args.port,
-        filePath = args.filepath,
-        fileName = args.filename,
-        method = args.select_repeat if args.stop_wait is None else args.stop_wait
+        host=args.addr,
+        port=args.port,
+        filePath=args.filepath,
+        fileName=args.filename,
+        method=args.select_repeat if args.stop_wait is None else args.stop_wait
     )
+
 
 def main(parameter):
     logger = Logger(parameter.outputVerbosity)
@@ -90,7 +114,9 @@ def main(parameter):
                 raise protocolError
 
     if not connectionEstablish:
-        logger.log(OutputVerbosity.QUIET, "Error while establishing with server")
+        logger.log(
+            OutputVerbosity.QUIET,
+            "Error while establishing with server")
         return
 
     logger.log(OutputVerbosity.QUIET, "Connection established with server")
@@ -105,7 +131,10 @@ def main(parameter):
 
     endTime = time.time_ns()
     completedTime = (endTime - startTime) * 10**-9
-    logger.log(OutputVerbosity.QUIET, "Upload completed in {:.2f} s".format(completedTime))
+    logger.log(
+        OutputVerbosity.QUIET,
+        "Upload completed in {:.2f} s".format(completedTime))
+
 
 if __name__ == "__main__":
     parameter = obtainParameters()

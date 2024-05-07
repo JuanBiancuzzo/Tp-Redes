@@ -2,18 +2,22 @@ import argparse
 from dataclasses import dataclass
 from enum import Enum
 
+
 class OutputVerbosity(Enum):
     QUIET = 1
     NORMAL = 2
     VERBOSE = 3
 
+
 class SendMethod(Enum):
     STOP_WAIT = 1
     SELECTIVE_REPEAT = 2
 
+
 class ActionMethod(Enum):
     UPLOAD = 0
     DOWNLOAD = 1
+
 
 @dataclass
 class ClientParameter:
@@ -24,6 +28,7 @@ class ClientParameter:
     fileName: str
     method: SendMethod
 
+
 @dataclass
 class ServerParameter:
     outputVerbosity: OutputVerbosity
@@ -31,6 +36,7 @@ class ServerParameter:
     port: int
     storagePath: str
     method: SendMethod
+
 
 class CustomFormatter(argparse.HelpFormatter):
     def _format_action_invocation(self, action):
@@ -41,4 +47,3 @@ class CustomFormatter(argparse.HelpFormatter):
             return ', '.join(parts)
         else:
             return super()._format_action_invocation(action)
-

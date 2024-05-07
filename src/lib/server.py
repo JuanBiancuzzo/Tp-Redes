@@ -1,17 +1,16 @@
-from socket import *
 import os
-import struct 
+import struct
 
 from lib.rdtp import RDTP
 from lib.protocol.header_package import HeaderPackage, HEADER_SIZE
 from lib.parameter import ActionMethod, OutputVerbosity
-from lib.logger import Logger
 from lib.errors import ProtocolError, ApplicationError
 
 FILE_SIZE_SIZE = 8
 FORMAT = '>Q'
 
-FILE_SPLIT = 2**28 # 250 Mbytes 
+FILE_SPLIT = 2**28  # 250 Mbytes
+
 
 def calculateSizeString(numBytes):
     if numBytes < 2**10:
@@ -36,8 +35,10 @@ class Server:
         try:
             os.makedirs(os.path.join(os.getcwd(), dir), exist_ok=True)
         except Exception as e:
-            logger.log(OutputVerbosity.VERBOSE, f"Error creating directory: {e}")
-            
+            logger.log(
+                OutputVerbosity.VERBOSE,
+                f"Error creating directory: {e}")
+
         self.rdtp = RDTP(method, logger)
         self.rdtp.bind(ip, port)
         self.logger = logger
@@ -52,9 +53,11 @@ class Server:
             message = connection.recv(FILE_SIZE_SIZE)
         except ProtocolError:
             raise ApplicationError.ERROR_RECEIVING
-            
+
         fileSize = struct.unpack(FORMAT, message)[0]
-        logger.log(OutputVerbosity.VERBOSE, f"File to save of size: {calculateSizeString(fileSize)}")
+        logger.log(
+            OutputVerbosity.VERBOSE,
+            f"File to save of size: {calculateSizeString(fileSize)}")
 
         logger.log(OutputVerbosity.NORMAL, "Receiving file from client")
         split = min(FILE_SPLIT, fileSize)
@@ -64,7 +67,9 @@ class Server:
             except ProtocolError:
                 raise ApplicationError.ERROR_RECEIVING
 
-            logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} received")
+            logger.log(
+                OutputVerbosity.VERBOSE,
+                f"Package of size: {calculateSizeString(split)} received")
 
             file.write(message)
 
@@ -92,7 +97,8 @@ class Server:
             except ProtocolError:
                 raise ApplicationError.ERROR_SENDING
 
-            logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} sent")
+            logger.log(OutputVerbosity.VERBOSE,
+                       f"Package of size: {calculateSizeString(split)} sent")
 
             fileSize -= split
             split = min(FILE_SPLIT, fileSize)
@@ -100,7 +106,8 @@ class Server:
         logger.log(OutputVerbosity.QUIET, "File sent")
 
     def handleClient(self, connection):
-        self.logger.log(OutputVerbosity.VERBOSE, "Waiting for package with method settings")
+        self.logger.log(OutputVerbosity.VERBOSE,
+                        "Waiting for package with method settings")
 
         try:
             message = connection.recv(HEADER_SIZE)
@@ -115,26 +122,44 @@ class Server:
         package = HeaderPackage.deserialize(message, action, fileNameSize)
 
         actionName = "upload" if action == ActionMethod.UPLOAD else "download"
-        self.logger.log(OutputVerbosity.NORMAL, f"Receiving package of type {actionName}")
+        self.logger.log(OutputVerbosity.NORMAL,
+                        f"Receiving package of type {actionName}")
 
         if package.action == ActionMethod.UPLOAD:
-            self.logger.log(OutputVerbosity.NORMAL, f"Receiving file: {package.fileName}\n\tSaving it at: {package.filePath}")
+            self.logger.log(
+                OutputVerbosity.NORMAL,
+                f"Receiving file: {package.fileName}\n\
+                    \tSaving it at: {package.filePath}")
 
             # Creando el directorio
             try:
-                os.makedirs(os.path.join(os.getcwd(), f"{self.dir}/{package.filePath}"), exist_ok=True)
+                os.makedirs(
+                    os.path.join(
+                        os.getcwd(),
+                        f"{self.dir}/{package.filePath}"),
+                    exist_ok=True)
             except Exception as e:
-                self.logger.log(OutputVerbosity.VERBOSE, f"Error creating directory: {e}")
-                
-            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "wb") as file:
+                self.logger.log(
+                    OutputVerbosity.VERBOSE,
+                    f"Error creating directory: {e}")
+
+            with open(f"{self.dir}/{package.filePath}\
+                    /{package.fileName}", "wb") as file:
                 Server.handleUpload(connection, file, self.logger)
         else:
-            self.logger.log(OutputVerbosity.NORMAL, f"Sending file: {package.fileName}\n\tFrom: {package.filePath}")
-            fileSize = os.path.getsize(f"{self.dir}/{package.filePath}/{package.fileName}")
+            self.logger.log(
+                OutputVerbosity.NORMAL,
+                f"Sending file: {package.fileName}\n\
+                    \tFrom: {package.filePath}")
+            fileSize = os.path.getsize(
+                f"{self.dir}/{package.filePath}/{package.fileName}")
 
-            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "rb") as file:
+            with open(f"{self.dir}/{package.filePath}/\
+                    {package.fileName}", "rb") as file:
                 Server.handleDownload(connection, file, fileSize, self.logger)
 
-        self.logger.log(OutputVerbosity.NORMAL, "Closing connection with client")
+        self.logger.log(
+            OutputVerbosity.NORMAL,
+            "Closing connection with client")
         connection.close()
         self.logger.log(OutputVerbosity.QUIET, "Closed connection with client")
