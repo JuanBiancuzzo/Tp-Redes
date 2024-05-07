@@ -11,16 +11,15 @@ from lib.errors import ProtocolError
 
 PORT_INDEX = 1
 
-# Ethernet MTU (1500) - IPv4 Header (20) - UDP Header (8)
-#   este tamaño no cuenta nuestro propio header por lo que lo contiene
-MAX_MSG = (1500 - 20 - 8) * 5
-
+MAX_MSG = 51200 # 50 KB
 MAX_PAYLOAD = MAX_MSG - HEADER_SIZE
+
 WINDOW_SIZE_SR = 5
 WINDOW_SIZE_SW = 1
+
 MAX_TIMEOUTS = 10
 
-MAX_SENDING_QUEUE = 10
+MAX_REPEATED_ACKS = 3
 
 class RDTPStream:
 
@@ -48,6 +47,7 @@ class RDTPStream:
         self.received_close_message = False
 
         self.num_timeouts = 0
+        self.num_repeated_acks = 0
     
     def recv_segment(self, timer):
         """
@@ -67,9 +67,6 @@ class RDTPStream:
         return segment
 
     def send_payload(self, timer):
-        if len(self.window.segments) > 10:
-            return None
-
         if self.send_pipe.poll(timer):
             return self.send_pipe.recv()
         return None
@@ -90,18 +87,18 @@ class RDTPStream:
                 self.logger.log(OutputVerbosity.VERBOSE, f"Received new ack message, sending new batch of segments")
                 self.window.send_new_batch()
                 self.num_timeouts = 0
+                self.num_repeated_acks = 0
 
-            else:
+            elif self.num_repeated_acks + 1 >= MAX_REPEATED_ACKS:
                 self.logger.log(OutputVerbosity.VERBOSE, f"Received repeated ack message, re-sending oldest segment in window")
                 self.window.resend_oldest_segment()
+                self.num_repeated_acks = 0
+            
+            else:
+                self.num_repeated_acks += 1
 
         elif segment.header.fin:
             # solo se manda el fin después de haber recibido ack de todos los mensajes
-            if segment.header.seq_num != self.ack_number:
-                # puede ser que no le llego el fin ack
-                # raise error
-                pass
-
             self.ack_number += 1
             
             self.logger.log(OutputVerbosity.VERBOSE, "Receving end closing")

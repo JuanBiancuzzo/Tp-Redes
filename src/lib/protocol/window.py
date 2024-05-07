@@ -78,7 +78,7 @@ class Window:
 
         if timeout_occur:
             # Actualizamos el timer del primer segmento en la ventana
-            self.window[0][1] = current_time_ns        
+            self.window[0][1] = current_time_ns
 
         return timeout_occur
 
