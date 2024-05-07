@@ -143,8 +143,7 @@ class Server:
                     OutputVerbosity.VERBOSE,
                     f"Error creating directory: {e}")
 
-            with open(f"{self.dir}/{package.filePath}\
-                    /{package.fileName}", "wb") as file:
+            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "wb") as file:
                 Server.handleUpload(connection, file, self.logger)
         else:
             self.logger.log(
@@ -154,8 +153,7 @@ class Server:
             fileSize = os.path.getsize(
                 f"{self.dir}/{package.filePath}/{package.fileName}")
 
-            with open(f"{self.dir}/{package.filePath}/\
-                    {package.fileName}", "rb") as file:
+            with open(f"{self.dir}/{package.filePath}/{package.fileName}", "rb") as file:
                 Server.handleDownload(connection, file, fileSize, self.logger)
 
         self.logger.log(
