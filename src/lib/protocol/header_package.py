@@ -7,6 +7,7 @@ FORMAT = '>BII'
 HEADER_SIZE = 9
 ENCODING = "UTF-8"
 
+
 @dataclass
 class HeaderPackage:
     action: ActionMethod
@@ -15,7 +16,7 @@ class HeaderPackage:
 
     def serialize(self):
         """
-        Exceptions: 
+        Exceptions:
             * ProtocolError.ERROR_ENCODING_FILE_DATA
             * ProtocolError.ERROR_PACKING
         """
@@ -36,23 +37,24 @@ class HeaderPackage:
                 fileNameSize,
                 filePathSize
             ) + fileNameSerialized + filePathSerialized
-        
+
         except struct.error:
             raise ProtocolError.ERROR_PACKING
 
     @classmethod
     def getSize(cls, data):
         """
-        Exceptions: 
+        Exceptions:
             * ProtocolError.ERROR_UNPACKING
             * ProtocolError.ERROR_INVALID_ACTION
         """
 
         # Solo se puede guardar los tamaños
         try:
-            actionValue, fileNameSize, filePathSize = struct.unpack(FORMAT, data)
+            actionValue, fileNameSize, filePathSize = struct.unpack(
+                FORMAT, data)
         except struct.error:
-            raise ProtocolError.ERROR_UNPACKING            
+            raise ProtocolError.ERROR_UNPACKING
 
         if actionValue == ActionMethod.UPLOAD.value:
             action = ActionMethod.UPLOAD
@@ -66,7 +68,7 @@ class HeaderPackage:
     @classmethod
     def deserialize(cls, data, action, fileNameSize):
         """
-        Exceptions: 
+        Exceptions:
             * ProtocolError.ERROR_DECODING_FILE_DATA
         """
 

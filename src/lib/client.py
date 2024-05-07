@@ -1,6 +1,5 @@
-import socket
 import os
-import struct 
+import struct
 
 from lib.rdtp import RDTP
 from lib.parameter import ActionMethod, OutputVerbosity
@@ -9,9 +8,9 @@ from lib.errors import ProtocolError, ApplicationError
 
 FILE_SIZE_SIZE = 8
 
-FORMAT = '>Q' # 8 bytes
-# FILE_SPLIT = 2**28 # 250 Mbytes 
-FILE_SPLIT = 2**58
+FORMAT = '>Q'  # 8 bytes
+FILE_SPLIT = 2**28  # 250 Mbytes
+
 
 def calculateSizeString(numBytes):
     if numBytes < 2**10:
@@ -25,6 +24,7 @@ def calculateSizeString(numBytes):
 
     return string
 
+
 class Client:
     def __init__(self, method, logger, host, port):
         client = RDTP(method, logger)
@@ -33,14 +33,16 @@ class Client:
 
     @classmethod
     def sendInfoPackage(cls, connection, action, filename, filepath, logger):
-        logger.log(OutputVerbosity.VERBOSE, "Crafting package with upload settings")
+        logger.log(OutputVerbosity.VERBOSE,
+                   "Crafting package with upload settings")
         infoPackage = HeaderPackage(
-                action,
-                filename,
-                filepath
+            action,
+            filename,
+            filepath
         )
 
-        logger.log(OutputVerbosity.VERBOSE, "Sending package with upload settings")
+        logger.log(OutputVerbosity.VERBOSE,
+                   "Sending package with upload settings")
         try:
             connection.send(infoPackage.serialize())
         except ProtocolError:
@@ -66,13 +68,14 @@ class Client:
             except ProtocolError:
                 raise ApplicationError.ERROR_SENDING
 
-            logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} sent")
+            logger.log(OutputVerbosity.VERBOSE,
+                       f"Package of size: {calculateSizeString(split)} sent")
 
             fileSize -= split
             split = min(FILE_SPLIT, fileSize)
 
         logger.log(OutputVerbosity.QUIET, "File sent")
-    
+
     def upload(self, filename, filepath):
         Client.sendInfoPackage(
             self.stream,
@@ -82,14 +85,16 @@ class Client:
             self.logger
         )
 
-        self.logger.log(OutputVerbosity.NORMAL, f"Sending file: {filename}\n\tFrom: {filepath}")
+        self.logger.log(OutputVerbosity.NORMAL,
+                        f"Sending file: {filename}\n\tFrom: {filepath}")
 
         fileSize = os.path.getsize(f"{filepath}/{filename}")
         with open(f"{filepath}/{filename}", "rb") as file:
             Client.uploadFile(self.stream, file, fileSize, self.logger)
 
-
-        self.logger.log(OutputVerbosity.NORMAL, "Closing connection with server")
+        self.logger.log(
+            OutputVerbosity.NORMAL,
+            "Closing connection with server")
         self.stream.close()
         self.logger.log(OutputVerbosity.QUIET, "Closed connection with server")
 
@@ -102,7 +107,9 @@ class Client:
             raise ApplicationError.ERROR_RECEIVING
         fileSize = struct.unpack(FORMAT, message)[0]
 
-        logger.log(OutputVerbosity.VERBOSE, f"File to save of size: {calculateSizeString(fileSize)}")
+        logger.log(
+            OutputVerbosity.VERBOSE,
+            f"File to save of size: {calculateSizeString(fileSize)}")
 
         logger.log(OutputVerbosity.NORMAL, "Receiving file from server")
         split = min(FILE_SPLIT, fileSize)
@@ -112,7 +119,9 @@ class Client:
             except ProtocolError:
                 raise ApplicationError.ERROR_RECEIVING
 
-            logger.log(OutputVerbosity.VERBOSE, f"Package of size: {calculateSizeString(split)} received")
+            logger.log(
+                OutputVerbosity.VERBOSE,
+                f"Package of size: {calculateSizeString(split)} received")
 
             file.write(message)
 
@@ -130,19 +139,20 @@ class Client:
             self.logger
         )
 
-        self.logger.log(OutputVerbosity.NORMAL, f"Receiving file: {filename}\n\tFrom: {filepath}")
+        self.logger.log(OutputVerbosity.NORMAL,
+                        f"Receiving file: {filename}\n\tFrom: {filepath}")
 
         # Creando el directorio
         try:
             os.makedirs(os.path.join(os.getcwd(), filepath), exist_ok=True)
-        except:
+        except BaseException:
             pass
 
         with open(f"{filepath}/{filename}", "wb") as file:
             Client.downloadFile(self.stream, file, self.logger)
 
-
-        self.logger.log(OutputVerbosity.NORMAL, "Closing connection with server")
+        self.logger.log(
+            OutputVerbosity.NORMAL,
+            "Closing connection with server")
         self.stream.close()
         self.logger.log(OutputVerbosity.QUIET, "Closed connection with server")
-    

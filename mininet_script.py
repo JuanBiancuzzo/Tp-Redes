@@ -6,6 +6,7 @@ from mininet.util import dumpNodeConnections
 
 import time
 
+
 def main():
     # Creamos una tología de red con un switch y dos hosts
     topo = SingleSwitchTopo(2)
@@ -26,11 +27,13 @@ def main():
 
     # Iniciamos el servidor en el host del servidor (lo hacemos en el
     # background para poder pasar a la siguiente línea)
-    server.cmd('python3 src/start-server.py -v -H localhost -p 3006 -s files/server_files -w > server_output.txt 2>&1 &')
+    server.cmd(
+        'python3 src/start-server.py -v -H localhost -p 3006 -s files/server_files -w > server_output.txt 2>&1 &')
 
     # Iniciamos el cliente en el host del cliente (lo hacemos en el
     # background para poder pasar a la siguiente línea)
-    client.cmd(f'python3 src/upload.py -v -H {server_ip} -p 3006 -s files/upload_files -n batman.png -w > client_output.txt 2>&1 &')
+    client.cmd(
+        f'python3 src/upload.py -v -H {server_ip} -p 3006 -s files/upload_files -n batman.png -w > client_output.txt 2>&1 &')
 
     # Esperamos 20 segundos para que el cliente y el servidor terminen
     # Lo hacemos así porque ahora mismo nunca regresan esos programas,
@@ -39,6 +42,7 @@ def main():
 
     # Stop Mininet
     net.stop()
+
 
 if __name__ == '__main__':
     main()

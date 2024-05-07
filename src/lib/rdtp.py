@@ -13,17 +13,18 @@ import random
 
 SRC_PORT_INDEX = 1
 
+
 class RDTP:
     def __init__(self, method, logger: Logger):
         self.socket = socket(AF_INET, SOCK_DGRAM)
 
         self.method = method
         self.logger = logger
-    
+
     # Para el cliente
     def connect(self, dest_ip, dest_port):
         """
-        Exception:  
+        Exception:
             * ProtocolError.ERROR_PACKING
             * ProtocolError.ERROR_UNPACKING
             * ProtocolError.ERROR_SENDING_MESSAGE
@@ -33,14 +34,16 @@ class RDTP:
 
         src_port = self.socket.getsockname()[SRC_PORT_INDEX]
         sequence_number = RDTP.generate_initial_sequence_number()
-        syn_message = RDTPSegment.create_syn_message(src_port, dest_port, sequence_number)
-        
+        syn_message = RDTPSegment.create_syn_message(
+            src_port, dest_port, sequence_number)
+
         try:
             self.socket.sendto(syn_message.serialize(), (dest_ip, dest_port))
         except SocketError:
             raise ProtocolError.ERROR_SENDING_MESSAGE
 
-        self.logger.log(OutputVerbosity.VERBOSE, f"Syn message sent to: {dest_ip}:{dest_port}")
+        self.logger.log(OutputVerbosity.VERBOSE,
+                        f"Syn message sent to: {dest_ip}:{dest_port}")
 
         try:
             self.socket.settimeout(TIMEOUT)
@@ -64,7 +67,8 @@ class RDTP:
         if header.syn and header.ack:
 
             sequence_number += 1
-            ack_ack_message = RDTPSegment.create_ack_ack_message(src_port, dest_port, sequence_number, ack_number)
+            ack_ack_message = RDTPSegment.create_ack_ack_message(
+                src_port, dest_port, sequence_number, ack_number)
 
             try:
                 self.socket.sendto(ack_ack_message.serialize(), server_address)
@@ -73,7 +77,13 @@ class RDTP:
 
             self.logger.log(OutputVerbosity.VERBOSE, "Ack-Ack message sent")
 
-            return create_stream(self.socket, server_address, sequence_number, ack_number, self.method, self.logger)
+            return create_stream(
+                self.socket,
+                server_address,
+                sequence_number,
+                ack_number,
+                self.method,
+                self.logger)
 
         else:
             raise ProtocolError.ERROR_HANDSHAKE
@@ -84,13 +94,15 @@ class RDTP:
             message, client_address = self.socket.recvfrom(HEADER_SIZE)
         except SocketError:
             raise ProtocolError.ERROR_RECEIVING_MESSAGE
-        
-        self.logger.log(OutputVerbosity.VERBOSE, "Server: Syn message received")
+
+        self.logger.log(
+            OutputVerbosity.VERBOSE,
+            "Server: Syn message received")
         header = Header.deserialize(message)
-        
+
         if not header.syn:
             raise ProtocolError.ERROR_HANDSHAKE
-        
+
         sequence_number = RDTP.generate_initial_sequence_number()
         ack_number = header.seq_num + 1
         dest_port = client_address[SRC_PORT_INDEX]
@@ -100,32 +112,43 @@ class RDTP:
 
         new_client_socket.bind((ip, 0))
         new_port = new_client_socket.getsockname()[SRC_PORT_INDEX]
-        
-        syn_ack_message = RDTPSegment.create_syn_ack_message(new_port, dest_port, sequence_number, ack_number)
+
+        syn_ack_message = RDTPSegment.create_syn_ack_message(
+            new_port, dest_port, sequence_number, ack_number)
         try:
             self.socket.sendto(syn_ack_message.serialize(), client_address)
         except SocketError:
             raise ProtocolError.ERROR_SENDING_MESSAGE
-        
-        self.logger.log(OutputVerbosity.VERBOSE, "Server: Syn-Ack message sent")
+
+        self.logger.log(
+            OutputVerbosity.VERBOSE,
+            "Server: Syn-Ack message sent")
         try:
             message, client_address = new_client_socket.recvfrom(HEADER_SIZE)
         except timeout:
             raise ProtocolError.ERROR_HANDSHAKE
         except SocketError:
             raise ProtocolError.ERROR_RECEIVING_MESSAGE
-        
-        self.logger.log(OutputVerbosity.VERBOSE, "Server: Ack-Ack message received")
+
+        self.logger.log(
+            OutputVerbosity.VERBOSE,
+            "Server: Ack-Ack message received")
         header = Header.deserialize(message)
-        
+
         if not header.ack:
             raise ProtocolError.ERROR_HANDSHAKE
-        
-        return create_stream(new_client_socket, client_address, sequence_number + 1, ack_number, self.method, self.logger)
+
+        return create_stream(
+            new_client_socket,
+            client_address,
+            sequence_number + 1,
+            ack_number,
+            self.method,
+            self.logger)
 
     def bind(self, ip, port):
         self.socket.bind((ip, port))
-    
+
     @classmethod
     def generate_initial_sequence_number(cls):
         return random.randint(0, 2**32 - 1)

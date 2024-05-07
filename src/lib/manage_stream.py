@@ -10,8 +10,9 @@ from lib.protocol.window import TIMEOUT
 from lib.parameter import OutputVerbosity
 from lib.logger import Logger
 
-SELF_TIMEOUT = TIMEOUT / 10
+SELF_TIMEOUT = TIMEOUT / 50
 PING_TIME = TIMEOUT * 10
+
 
 def manage_stream(stream: RDTPStream, logger: Logger):
     """
@@ -26,25 +27,27 @@ def manage_stream(stream: RDTPStream, logger: Logger):
 
     while not (stream.sent_close_message and stream.received_close_message):
 
-        # chequea todos los timers de los send message y hace la logica que sea necesaria
+        segment = stream.recv_segment(SELF_TIMEOUT)
+        if segment is not None:
+            stream.recv(segment)
+
+        # chequea todos los timers de los send message
+        # y hace la logica que sea necesaria
         # Que se tenga un número de timeout repetidos
         current_time_ns = time.time_ns()
         try:
-            stream.check_times(current_time_ns)
+            if segment is None:
+                stream.check_times(current_time_ns)
         except ProtocolError as protocolError:
             if protocolError == ProtocolError.ERROR_RECEIVING_END_DEAD:
                 logger.log(OutputVerbosity.QUIET, "Connection dead")
                 break
             else:
                 raise protocolError
-        
+
         if current_time_ns - ping_time_ns > PING_TIME * 10**9:
             stream.send_ping_message()
             ping_time_ns = current_time_ns
-
-        segment = stream.recv_segment(SELF_TIMEOUT)
-        if segment is not None:
-            stream.recv(segment)
 
         payload = stream.send_payload(SELF_TIMEOUT)
         if payload is not None:
@@ -53,28 +56,47 @@ def manage_stream(stream: RDTPStream, logger: Logger):
         if stream.close_queue.full() and stream.window.empty():
             stream.send_fin_message()
             _ = stream.close_queue.get()
-    
+
     logger.log(OutputVerbosity.VERBOSE, "Closing stream")
 
     stream.received_pipe.close()
     stream.send_pipe.close()
-        
-def create_stream(socket, receiver_address, sequence_number, ack_number, method, logger):
+
+
+def create_stream(
+        socket,
+        receiver_address,
+        sequence_number,
+        ack_number,
+        method,
+        logger):
 
     parent_recv_pipe, child_recv_pipe = Pipe(False)
     parent_send_pipe, child_send_pipe = Pipe(False)
 
-    stream = RDTPStream(socket, receiver_address, sequence_number, ack_number, child_recv_pipe, parent_send_pipe,  method, logger)
+    stream = RDTPStream(
+        socket,
+        receiver_address,
+        sequence_number,
+        ack_number,
+        child_recv_pipe,
+        parent_send_pipe,
+        method,
+        logger)
     close_queue = stream.close_queue
 
     stream_manager_handler = threading.Thread(
-        target = manage_stream,
-        args = [stream, logger]
+        target=manage_stream,
+        args=[stream, logger]
     )
-    
+
     try:
         stream_manager_handler.start()
-    except:
-        raise ProtocolError.ERROR_CREATING_STREAM_THREAD        
+    except BaseException:
+        raise ProtocolError.ERROR_CREATING_STREAM_THREAD
 
-    return RDTPStreamProxy(parent_recv_pipe, child_send_pipe, close_queue, stream_manager_handler)
+    return RDTPStreamProxy(
+        parent_recv_pipe,
+        child_send_pipe,
+        close_queue,
+        stream_manager_handler)
