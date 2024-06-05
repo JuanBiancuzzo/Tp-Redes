@@ -15,7 +15,7 @@ class RedesTopo(Topo):
         cantSwitches = data["cantSwitches"]
         posFirewall = data["firewallSwitch"]
 
-        if posFirewall >= cantSwitches:
+        if posFirewall > cantSwitches or posFirewall <= 0:
             print("No hay firewall")
 
         Topo.__init__(self)
@@ -27,11 +27,11 @@ class RedesTopo(Topo):
         # Agregamos switches
         switches = []
         for i in range(cantSwitches):
-            if i != posFirewall:
+            if i != posFirewall - 1:
                 switches.append(self.addSwitch(f"switch{i + 1}", stp = True))
                 continue
 
-            switches.append(self.addSwitch(f"switch{i + 1}", stp = True))
+            switches.append(self.addSwitch(f"firewall{i + 1}", stp = True))
             print("Se creo el firewall")
 
         # Agregamos links

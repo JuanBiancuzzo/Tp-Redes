@@ -1,5 +1,5 @@
 #!/bin/sh
 
 cd pox
-./pox.py firewall
+./pox.py firewall --path_archivo=../config.json
 cd ..
