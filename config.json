@@ -1,4 +1,22 @@
 {
     "cantSwitches": 3,
-    "firewallSwitch": 1
+    "firewallSwitch": 1,
+    "reglas": [
+        {
+            "puertoDestino": 80
+        },
+        {
+            "ipOrigen": "10.0.0.1",
+            "puertoDestino": 5001,
+            "protocolo": "UDP"
+        },
+        {
+            "ipOrigen": "10.0.0.2",
+            "ipDestino": "10.0.0.1"
+        },
+        {
+            "ipOrigen": "10.0.0.1",
+            "ipDestino": "10.0.0.2"
+        }
+    ]
 }
