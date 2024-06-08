@@ -9,7 +9,7 @@ from pox.lib.addresses import EthAddr
 from collections import namedtuple
 
 # Add your imports here ...
-# log = core.getLogger()
+log = core.getLogger()
 
 class Firewall(EventMixin):
     def __init__(self, pathArchivo):
@@ -17,17 +17,22 @@ class Firewall(EventMixin):
         print("Enabling Firewall Module")
 
         self.pathArchivo = pathArchivo
-        self.parametros = Firewall.settearParametros(self.pathArchivo)
+        self.parametros = {}
+        self.dirty = True
 
     def _handle_ConnectionUp(self, event):
-        self.parametros = Firewall.settearParametros(self.pathArchivo)
+        if self.dirty:
+            self.parametros = Firewall.settearParametros(self.pathArchivo)
+            self.dirty = False
 
     def _handle_PacketIn(self, event):
         if event.dpid != int(self.parametros["firewallSwitch"]):
             return
 
+        print(event.dpid)
+
     def _handle_ConnectionDown(self, event):
-        pass
+        self.dirty = True
 
     @classmethod
     def settearParametros(cls, pathArchivo):
@@ -37,5 +42,3 @@ class Firewall(EventMixin):
 
 def launch(path_archivo):
     core.registerNew(Firewall, path_archivo)
-
-
