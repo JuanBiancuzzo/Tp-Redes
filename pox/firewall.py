@@ -1,6 +1,8 @@
+import dataclasses
 import os
 import json
 from enum import Enum
+from dataclasses import dataclass
 
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
@@ -41,45 +43,51 @@ class Firewall(EventMixin):
             self.firewallID = int(self.parametros["firewallSwitch"])
             self.dirty = False
 
-
         if event.dpid == self.firewallID:
             msg = of.ofp_flow_mod()
             # msg.priority = 42
-            # msg.match.nw_dst = IPAddr("10.0.0.2")
+            msg.match.nw_dst = IPAddr("10.0.0.2")
             # msg.match.tp_dst = 80
-            # msg.actions.append(of.ofp_action_output(port=of.OFPP_NONE))
-            # event.connection.send(msg)
+            msg.actions.append(of.ofp_action_output(port=0))
+            print(msg)
+            event.connection.send(msg)
 
     def _handle_PacketIn(self, event):
         if event.dpid != self.firewallID:
             return
+        return
 
         direcciones = event.parsed.find('ipv4') 
-        protocolo = event.parsed.find("tcp")
-        esTCP = True
-        if protocolo is None:
-            protocolo = event.parsed.find("udp")
-            esTCP = False
-
-        if direcciones is None or protocolo is None:
+        if direcciones is None:
             return
 
+        protocoloParsed = event.parsed.find("tcp")
+        protocolo = Protocolo.TCP
+        if protocoloParsed is None:
+            protocoloParsed = event.parsed.find("udp")
+            protocolo = Protocolo.UDP
 
+        print(direcciones.dstip)
 
-        if self.bloquearPaquete(
-            esTCP,
-            direcciones.srcip,
-            protocolo.srcport,
-            direcciones.dstip,
-            protocolo.dstport,
-        ):
+        if protocoloParsed is None:
+            return
+
+        mensaje = Mensaje(
+            protocolo,
+            str(direcciones.srcip),
+            protocoloParsed.srcport,
+            str(direcciones.dstip),
+            protocoloParsed.dstport,
+        )
+
+        if self.bloquearPaquete(mensaje):
             event.halt = True
 
     def _handle_ConnectionDown(self, event):
         self.dirty = True
 
-    def bloquearPaquete(self, esTCP, srcip, srcport, dstip, dstport):
-        print(srcip)
+    def bloquearPaquete(self, mensaje):
+        print(mensaje)
         for regla in self.parametros["reglas"]:
             pass
         return False
