@@ -39,24 +39,26 @@ It'd actually be great to have a version of this written against, say,
 CherryPy, but I did want to include a simple, dependency-free web solution.
 """
 
-from socketserver import ThreadingMixIn
-from http.server import *
+from SocketServer import ThreadingMixIn
+from BaseHTTPServer import *
 from time import sleep
 import select
 import threading
 
-from .authentication import BasicAuthMixin
+from authentication import BasicAuthMixin
 
 from pox.core import core
-from pox.lib.revent import Event, EventMixin
 
 import os
 import socket
 import posixpath
-import urllib.request, urllib.parse, urllib.error
+import urllib
 import cgi
 import errno
-from io import StringIO, BytesIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 log = core.getLogger()
 try:
@@ -102,7 +104,7 @@ class ShutdownHelper (object):
     cc = dict(self.sockets)
     self.sockets.clear()
     #if cc: log.debug("Shutting down %s socket(s)", len(cc))
-    for s,(r,w,c) in cc.items():
+    for s,(r,w,c) in cc.iteritems():
       try:
         if r and w: flags = socket.SHUT_RDWR
         elif r: flags = socket.SHUT_RD
@@ -133,9 +135,9 @@ _shutdown_helper = ShutdownHelper()
 
 
 
-from http.cookies import SimpleCookie
+from Cookie import SimpleCookie
 
-POX_COOKIEGUARD_DEFAULT_COOKIE_NAME = "POXCookieGuardCookie"
+POX_COOKIEGUARD_COOKIE_NAME = "POXCookieGuardCookie"
 
 def _gen_cgc ():
   #TODO: Use Python 3 secrets module
@@ -150,12 +152,10 @@ def _gen_cgc ():
   data = "".join([str(rng.randint(0,9)) for _ in range(1024)])
   data += str(datetime.datetime.now())
   data += str(id(data))
-  data = data.encode()
   return hashlib.sha256(data).hexdigest()
 
 
 import urllib
-from urllib.parse import quote_plus, unquote_plus
 
 class POXCookieGuardMixin (object):
   """
@@ -172,83 +172,30 @@ class POXCookieGuardMixin (object):
 
   _pox_cookieguard_bouncer = "/_poxcookieguard/bounce"
   _pox_cookieguard_secret = _gen_cgc()
-  _pox_cookieguard_cookie_name = POX_COOKIEGUARD_DEFAULT_COOKIE_NAME
-  _pox_cookieguard_consume_post = True
-
-  def _cookieguard_maybe_consume_post (self):
-    if self._pox_cookieguard_consume_post is False: return
-    if self.command != "POST": return
-
-    # Read rest of input to avoid connection reset
-    cgi.FieldStorage( fp = self.rfile, headers = self.headers,
-                      environ={ 'REQUEST_METHOD':'POST' } )
 
   def _get_cookieguard_cookie (self):
     return self._pox_cookieguard_secret
 
-  def _get_cookieguard_cookie_path (self, requested):
-    """
-    Gets the path to be used for the cookie
-    """
+  def _do_cookieguard (self):
+    if not getattr(self, 'pox_cookieguard', True):
+      return True
 
-    return "/"
-
-  def _do_cookieguard_explict_continuation (self, requested, target):
-    """
-    Sends explicit continuation page
-    """
-    log.debug("POX CookieGuard bouncer doesn't have correct cookie; "
-              "Sending explicit continuation page")
-    self.send_response(200)
-    self.send_header("Content-type", "text/html")
-    self.end_headers()
-    self.wfile.write(("""
-      <html><head><title>POX CookieGuard</title></head>
-      <body>
-      A separate site has linked you here.  If this was intentional,
-      please <a href="%s">continue to %s</a>.
-      </body>
-      </html>
-      """ % (target, cgi.escape(target))).encode())
-
-  def _do_cookieguard_set_cookie (self, requested, bad_cookie):
-    """
-    Sets the cookie and redirects
-
-    bad_cookie is True if the cookie was set but is wrong.
-    """
-    self._cookieguard_maybe_consume_post()
-    self.send_response(307, "Temporary Redirect")
-
-    #TODO: Set Secure automatically if being accessed by https.
-    #TODO: Set Path cookie attribute
-    self.send_header("Set-Cookie",
-                     "%s=%s; SameSite=Strict; HttpOnly; path=%s"
-                     % (self._pox_cookieguard_cookie_name,
-                        self._get_cookieguard_cookie(),
-                        self._get_cookieguard_cookie_path(requested)))
-
-    self.send_header("Location", self._pox_cookieguard_bouncer + "?"
-                                 + quote_plus(requested))
-    self.end_headers()
-
-  def _do_cookieguard (self, override=None):
-    do_cg = override
-    if do_cg is None: do_cg = getattr(self, 'pox_cookieguard', True)
-    if not do_cg: return True
-
-    requested = self.raw_requestline.split()[1].decode("latin-1")
+    requested = self.raw_requestline.split()[1]
 
     cookies = SimpleCookie(self.headers.get('Cookie'))
-    cgc = cookies.get(self._pox_cookieguard_cookie_name)
+    cgc = cookies.get(POX_COOKIEGUARD_COOKIE_NAME)
     if cgc and cgc.value == self._get_cookieguard_cookie():
       if requested.startswith(self._pox_cookieguard_bouncer + "?"):
+        # See below for what this bouncing dumbness is
         log.debug("POX CookieGuard cookie is valid -- bouncing")
         qs = requested.split("?",1)[1]
 
-        self._cookieguard_maybe_consume_post()
         self.send_response(307, "Temporary Redirect")
-        self.send_header("Location", unquote_plus(qs))
+        self.send_header("Set-Cookie",
+                         "%s=%s; SameSite=Strict; HttpOnly; path=/"
+                         % (POX_COOKIEGUARD_COOKIE_NAME,
+                            self._get_cookieguard_cookie()))
+        self.send_header("Location", urllib.unquote_plus(qs))
         self.end_headers()
         return False
 
@@ -259,8 +206,8 @@ class POXCookieGuardMixin (object):
       if requested.startswith(self._pox_cookieguard_bouncer + "?"):
         # Client probably didn't save cookie
         qs = requested.split("?",1)[1]
-        target = unquote_plus(qs)
-        bad_qs = quote_plus(target) != qs
+        target = urllib.unquote_plus(qs)
+        bad_qs = urllib.quote_plus(target) != qs
         if bad_qs or self.command != "GET":
           log.warn("Bad POX CookieGuard bounce; possible attack "
                    "(method:%s cookie:%s qs:%s)",
@@ -271,7 +218,19 @@ class POXCookieGuardMixin (object):
           self.end_headers()
           return False
 
-        self._do_cookieguard_explict_continuation(requested, target)
+        log.debug("POX CookieGuard bouncer doesn't have correct cookie; "
+                  "Sending explicit continuation page")
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write("""
+          <html><head><title>POX CookieGuard</title></head>
+          <body>
+          A separate site has linked you here.  If this was intentional,
+          please <a href="%s">continue to %s</a>.
+          </body>
+          </html>
+          """ % (target, cgi.escape(target)))
         return False
 
       if cgc:
@@ -279,12 +238,26 @@ class POXCookieGuardMixin (object):
       else:
         log.debug("POX CookieGuard got no cookie -- setting one")
 
-      self._do_cookieguard_set_cookie(requested, bool(cgc))
+      self.send_response(307, "Temporary Redirect")
+
+      #TODO: Set Secure automatically if being accessed by https.
+      #TODO: Set Path cookie attribute
+      self.send_header("Set-Cookie",
+                       "%s=%s; SameSite=Strict; HttpOnly; path=/"
+                       % (POX_COOKIEGUARD_COOKIE_NAME,
+                          self._get_cookieguard_cookie()))
+
+      # I think most or all browsers won't even follow this redirection,
+      # so I'm not even sure if the cookie value is important (though we
+      # check it anyway).
+      self.send_header("Location", self._pox_cookieguard_bouncer + "?"
+                                   + urllib.quote_plus(requested))
+      self.end_headers()
       return False
 
 
-import http.server
-from http.server import SimpleHTTPRequestHandler
+import SimpleHTTPServer
+from SimpleHTTPServer import SimpleHTTPRequestHandler
 
 
 class SplitRequestHandler (BaseHTTPRequestHandler):
@@ -364,8 +337,8 @@ _favicon = ("47494638396110001000c206006a5797927bc18f83ada9a1bfb49ceabda"
  + "4f4ffffffffffff21f904010a0007002c000000001000100000034578badcfe30b20"
  + "1c038d4e27a0f2004e081e2172a4051942abba260309ea6b805ab501581ae3129d90"
  + "1275c6404b80a72f5abcd4a2454cb334dbd9e58e74693b97425e07002003b")
-_favicon = bytes(int(_favicon[n:n+2],16)
-                 for n in range(0,len(_favicon),2))
+_favicon = ''.join([chr(int(_favicon[n:n+2],16))
+                   for n in xrange(0,len(_favicon),2)])
 
 class CoreHandler (SplitRequestHandler):
   """
@@ -404,7 +377,7 @@ class CoreHandler (SplitRequestHandler):
       r += "<li>%s - %s</li>\n" % (cgi.escape(str(k)), cgi.escape(str(v)))
     r += "</ul>\n\n<h2>Web Prefixes</h2>"
     r += "<ul>"
-    m = [list(map(cgi.escape, map(str, [x[0],x[1],x[1].format_info(x[3])])))
+    m = [map(cgi.escape, map(str, [x[0],x[1],x[1].format_info(x[3])]))
          for x in self.args.matches]
     m.sort()
     for v in m:
@@ -416,7 +389,7 @@ class CoreHandler (SplitRequestHandler):
     self.send_header("Content-Length", str(len(r)))
     self.end_headers()
     if is_get:
-      self.wfile.write(r.encode())
+      self.wfile.write(r)
 
 
 class StaticContentHandler (SplitRequestHandler, SimpleHTTPRequestHandler):
@@ -436,7 +409,7 @@ class StaticContentHandler (SplitRequestHandler, SimpleHTTPRequestHandler):
     path = self.translate_path(self.path)
     if os.path.isdir(path):
       if not self.path.endswith('/'):
-        self.send_response(302)
+        self.send_response(301)
         self.send_header("Location", self.prefix + self.path + "/")
         self.end_headers()
         return None
@@ -463,7 +436,7 @@ class StaticContentHandler (SplitRequestHandler, SimpleHTTPRequestHandler):
     parts = path.rstrip("/").split("/")
     r.write('<a href="/">/</a>')
     for i,part in enumerate(parts):
-      link = urllib.parse.quote("/".join(parts[:i+1]))
+      link = urllib.quote("/".join(parts[:i+1]))
       if i > 0: part += "/"
       r.write('<a href="%s">%s</a>' % (link, cgi.escape(part)))
     r.write("\n" + "-" * (0+len(path)) + "\n")
@@ -478,7 +451,7 @@ class StaticContentHandler (SplitRequestHandler, SimpleHTTPRequestHandler):
         files.append(f)
 
     def entry (n, rest=''):
-      link = urllib.parse.quote(n)
+      link = urllib.quote(n)
       name = cgi.escape(n)
       r.write('<a href="%s">%s</a>\n' % (link,name+rest))
 
@@ -493,7 +466,7 @@ class StaticContentHandler (SplitRequestHandler, SimpleHTTPRequestHandler):
     self.send_header("Content-Type", "text/html")
     self.send_header("Content-Length", str(len(r.getvalue())))
     self.end_headers()
-    return BytesIO(r.read().encode())
+    return r
 
   def translate_path (self, path, include_prefix = True):
     """
@@ -542,7 +515,7 @@ def wrapRequestHandler (handlerClass):
               (SplitRequestHandler, handlerClass, object), {})
 
 
-from http.server import CGIHTTPRequestHandler
+from CGIHTTPServer import CGIHTTPRequestHandler
 class SplitCGIRequestHandler (SplitRequestHandler,
                               CGIHTTPRequestHandler, object):
   """
@@ -619,6 +592,7 @@ class SplitterRequestHandler (BaseHTTPRequestHandler, BasicAuthMixin,
         return
 
     if not self._do_auth(): return
+    if not self._do_cookieguard(): return
 
     handler = None
 
@@ -641,54 +615,20 @@ class SplitterRequestHandler (BaseHTTPRequestHandler, BasicAuthMixin,
         handler = self
         if not self.path.endswith('/'):
           # Handle splits like directories
-          self.send_response(302)
+          self.send_response(301)
           self.send_header("Location", self.path + "/")
           self.end_headers()
           break
 
       break
 
-    override_cg = getattr(handler, "pox_cookieguard", None)
-    if not self._do_cookieguard(override_cg): return
-
-    event = WebRequest(self, handler)
-    self.server.raiseEventNoErrors(event)
-    if event.handler:
-      return event.handler._split_dispatch(self.command)
+    return handler._split_dispatch(self.command)
 
 
-class WebRequest (Event):
-  """
-  Hook for requests on the POX web server.
-
-  This event is fired when the webserver is going to handle a request.
-  The listener can modify the .handler to change how the event is
-  handled.  Or it can just be used to spy on requests.
-
-  If the handler is the splitter itself, then the page wasn't found.
-  """
-  splitter = None
-  handler = None
-
-  def __init__ (self, splitter, handler):
-    self.splitter = splitter
-    self.handler = handler
-
-  def set_handler (self, handler_class):
-    """
-    Set a new handler class
-    """
-    h = self.handler
-    self.handler = handler_class(h.parent, h.prefix, h.args)
-
-
-class SplitThreadedServer(ThreadingMixIn, HTTPServer, EventMixin):
-  _eventMixin_events = set([WebRequest])
-
+class SplitThreadedServer(ThreadingMixIn, HTTPServer):
   matches = [] # Tuples of (Prefix, TrimPrefix, Handler)
 
   def __init__ (self, *args, **kw):
-    self.matches = list(self.matches)
     self.ssl_server_key = kw.pop("ssl_server_key", None)
     self.ssl_server_cert = kw.pop("ssl_server_cert", None)
     self.ssl_client_certs = kw.pop("ssl_client_certs", None)
@@ -769,10 +709,8 @@ class InternalContentHandler (SplitRequestHandler):
   passing the request itself as the argument (so if the thing is a
   method, it'll essentially just be self twice).
 
-  The attribute or return value is ideally a tuple of (mime-type, bytes,
-  headers).  You may omit the headers.  If you include it, it can either
-  be a dictionary or a list of name/value pairs.  If you return a string
-  or bytes instead of such a tuple, it'll try to guess between HTML or
+  The attribute or return value is ideally a tuple of (mime-type, bytes),
+  though if you just return the bytes, it'll try to guess between HTML or
   plain text.  It'll then send that to the client.  Easy!
 
   When a handler is set up with set_handler(), the third argument becomes
@@ -792,7 +730,6 @@ class InternalContentHandler (SplitRequestHandler):
     self.do_response(False)
 
   def do_response (self, is_get):
-    path = "<Unknown>"
     try:
       path = self.path.lstrip("/").replace("/","__").replace(".","_")
       r = getattr(self, "GET_" + path, None)
@@ -827,36 +764,22 @@ class InternalContentHandler (SplitRequestHandler):
         self.send_error(404, "File not found")
         return
 
-      response_headers = []
-
-      if len(r) >= 2 and len(r) <= 3 and not isinstance(r, (str,bytes)):
-        ct = r[0]
-        if len(r) >= 3:
-          response_headers = r[2]
-        r = r[1]
+      if len(r) == 2 and not isinstance(r, str):
+        ct,r = r
       else:
-        if isinstance(r, str): r = r.encode()
-        if r.lstrip().startswith(b'{') and r.rstrip().endswith(b'}'):
+        if r.lstrip().startswith('{') and r.rstrip().endswith('}'):
           ct = "application/json"
-        elif b"<html" in r[:255]:
+        elif "<html" in r[:255]:
           ct = "text/html"
         else:
           ct = "text/plain"
-      if isinstance(r, str): r = r.encode()
-    except Exception as exc:
+    except Exception:
       self.send_error(500, "Internal server error")
-      msg = "%s failed trying to get '%s'" % (type(self).__name__, path)
-      if str(exc): msg += ": " + str(exc)
-      log.debug(msg)
       return
 
     self.send_response(200)
     self.send_header("Content-type", ct)
     self.send_header("Content-Length", str(len(r)))
-    if isinstance(response_headers, dict):
-      response_headers = list(response_headers.items())
-    for hname,hval in response_headers:
-      self.send_header(hname, hval)
     self.end_headers()
     if is_get:
       self.wfile.write(r)
@@ -890,10 +813,10 @@ class FileUploadHandler (SplitRequestHandler):
     self.send_header("Content-Length", str(len(r)))
     self.end_headers()
     if is_get:
-      self.wfile.write(r.encode())
+      self.wfile.write(r)
 
   def do_POST (self):
-    mime,params = cgi.parse_header(self.headers.get('content-type'))
+    mime,params = cgi.parse_header(self.headers.getheader('content-type'))
     if mime != 'multipart/form-data':
       self.send_error(400, "Expected form data")
       return
@@ -921,28 +844,11 @@ class FileUploadHandler (SplitRequestHandler):
     return msg
 
 
-def upload_test (save=False):
+def upload_test ():
   """
   Launch a file upload test
-
-  --save will save the file using its MD5 for the filename
   """
-  class SaveUploader (FileUploadHandler):
-    def on_upload (self, filename, datafile):
-      import io
-      data = datafile.read()
-      datafile = io.BytesIO(data)
-      ret = super().on_upload(filename, datafile)
-      import hashlib
-      h = hashlib.md5()
-      h.update(data)
-      h = h.hexdigest().upper()
-      with open("FILE_UPLOAD_" + h, "wb") as f:
-        f.write(data)
-      return ret
-  handler = SaveUploader if save else FileUploadHandler
-
-  core.WebServer.set_handler("/upload_test", handler)
+  core.WebServer.set_handler("/upload_test", FileUploadHandler)
 
 
 def launch (address='', port=8000, static=False, ssl_server_key=None,

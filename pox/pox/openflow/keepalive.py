@@ -38,7 +38,7 @@ def _handle_timer (ofnexus):
   t = time.time()
   dead = []
 
-  for dpid,con in ofnexus.connections.items():
+  for dpid,con in ofnexus.connections.iteritems():
     if t - con.idle_time > (_interval+_switch_timeout):
       dead.append(con)
       continue

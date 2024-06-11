@@ -242,7 +242,7 @@ class DHCPD (EventMixin):
       self.dpid = None
     else:
       try:
-        dpid = int(dpid)
+        dpid = long(dpid)
       except:
         dpid = util.str_to_dpid(dpid)
       self.dpid = dpid

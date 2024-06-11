@@ -35,7 +35,7 @@ NOTE: This module is usually automatically loaded by pox.py
 
 from pox.lib.revent import *
 from pox.lib.util import dpidToStr
-from . import libopenflow_01 as of
+import libopenflow_01 as of
 from pox.lib.packet.ethernet import ethernet
 
 
@@ -310,7 +310,7 @@ class OpenFlowConnectionArbiter (EventMixin):
 
 class ConnectionDict (dict):
   def __iter__ (self):
-    return iter(self.values())
+    return self.itervalues()
 
   def __contains__ (self, item):
     v = dict.__contains__(self, item)
@@ -319,10 +319,10 @@ class ConnectionDict (dict):
 
   @property
   def dpids (self):
-    return list(self.keys())
+    return self.keys()
 
   def iter_dpids (self):
-    return iter(self.keys())
+    return self.iterkeys()
 
 
 class OpenFlowNexus (EventMixin):
@@ -391,7 +391,7 @@ class OpenFlowNexus (EventMixin):
       return False
 
   def _handle_DownEvent (self, event):
-    for c in list(self._connections.values()):
+    for c in self._connections.values():
       try:
         c.disconnect()
       except:

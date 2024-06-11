@@ -58,11 +58,8 @@ def _handle_PacketIn (event):
   else:
     p = packet
     while p:
-      if isinstance(p, bytes):
+      if isinstance(p, basestring):
         msg += "[%s bytes]" % (len(p),)
-        break
-      elif isinstance(p, str):
-        msg += "[%s chars]" % (len(p),)
         break
       msg += "[%s]" % (p.__class__.__name__,)
       p = p.next
@@ -80,12 +77,12 @@ def launch (verbose = False, max_length = 110, full_packets = True,
   _verbose = verbose
   _max_length = max_length
   force_show = (show is True) or (hide is False and show is False)
-  if isinstance(hide, str):
+  if isinstance(hide, basestring):
     hide = hide.replace(',', ' ').replace('|', ' ')
     hide = set([p.lower() for p in hide.split()])
   else:
     hide = set()
-  if isinstance(show, str):
+  if isinstance(show, basestring):
     show = show.replace(',', ' ').replace('|', ' ')
     show = set([p.lower() for p in show.split()])
   else:

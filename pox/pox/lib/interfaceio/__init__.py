@@ -22,7 +22,7 @@ Currently limited to Linux.
 """
 
 from pox.lib.pxpcap import PCap
-from queue import Queue
+from Queue import Queue
 from pox.lib.revent import Event, EventMixin
 from pox.lib.ioworker.io_loop import ReadLoop
 from pox.core import core
@@ -429,7 +429,7 @@ class Interface (object):
     if isinstance(network, tuple):
       addr,mask = network
       addr = str(addr)
-      if isinstance(mask, int):
+      if isinstance(mask, (int,long)):
         mask = cidr_to_netmask(mask)
       mask = str(mask)
       network = "%s/%s" % (addr,mask)
@@ -568,7 +568,7 @@ class PCapInterface (Interface, EventMixin):
 
   def _queue_read (self):
     anything = False
-    for _ in range(10): # as most X at once
+    for _ in xrange(10): # as most X at once
       try:
         data = self._q.get(False)
         self._q.task_done()

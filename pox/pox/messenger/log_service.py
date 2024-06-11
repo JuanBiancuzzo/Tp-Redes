@@ -132,7 +132,7 @@ class LogHandler (logging.Handler):
     if "setLevels" in params:
       levels = params['setLevels']
       if isinstance(levels, dict):
-        for k,v in levels.items():
+        for k,v in levels.iteritems():
           l = core.getLogger(k)
           l.setLevel(v)
       else:
@@ -188,25 +188,25 @@ def _process_commands (msg):
   raiseLevels = get("raiseLevels") # more verbose
   setLevels = get("setLevels")
 
-  for k,v in lowerLevels.items():
+  for k,v in lowerLevels.iteritems():
     logger = core.getLogger(k)
     level = logging._checkLevel(v)
     if not l.isEnabledFor(level+1):
       logger.setLevel(v)
 
-  for k,v in raiseLevels.items():
+  for k,v in raiseLevels.iteritems():
     logger = core.getLogger(k)
     if not l.isEnabledFor(v):
       logger.setLevel(v)
 
-  for k,v in setLevels.items():
+  for k,v in setLevels.iteritems():
     logger = core.getLogger(k)
     logger.setLevel(v)
 
   message = msg.get("message", None)
   if message:
     level = msg.get("level", "DEBUG")
-    if isinstance(level, str):
+    if isinstance(level, basestring):
       import logging
       if not level.isalpha():
         level = logging.DEBUG

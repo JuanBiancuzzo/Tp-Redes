@@ -68,11 +68,8 @@ def cb (data, parser):
   else:
     p = packet
     while p:
-      if isinstance(p, bytes):
+      if isinstance(p, basestring):
         msg += "[%s bytes]" % (len(p),)
-        break
-      elif isinstance(p, str):
-        msg += "[%s chars]" % (len(p),)
         break
       msg += "[%s]" % (p.__class__.__name__,)
       p = p.next
@@ -82,7 +79,7 @@ def cb (data, parser):
       msg = msg[:_max_length-3]
       msg += "..."
   #core.getLogger("dump").info(msg)
-  print(msg)
+  print msg
 
 
 def launch (infile, verbose = False, max_length = 110,
@@ -94,12 +91,12 @@ def launch (infile, verbose = False, max_length = 110,
   else:
     _max_length = int(max_length)
   force_show = (show is True) or (hide is False and show is False)
-  if isinstance(hide, str):
+  if isinstance(hide, basestring):
     hide = hide.replace(',', ' ').replace('|', ' ')
     hide = set([p.lower() for p in hide.split()])
   else:
     hide = set()
-  if isinstance(show, str):
+  if isinstance(show, basestring):
     show = show.replace(',', ' ').replace('|', ' ')
     show = set([p.lower() for p in show.split()])
   else:

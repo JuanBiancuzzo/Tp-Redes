@@ -4,7 +4,7 @@ IF NOT EXIST WpdPack GOTO NODIR
 mkdir ..\windows
 echo. > ..\windows\__init__.py
 
-python3 setup.py build
+python setup.py build
 xcopy /y build\lib.win32-2.7\pxpcap.pyd ..
 xcopy /y build\lib.win32-2.7\pxpcap.pyd ..\windows
 

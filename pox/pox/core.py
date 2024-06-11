@@ -1,4 +1,4 @@
-# Copyright 2011-2020 James McCauley
+# Copyright 2011-2018 James McCauley
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -210,8 +210,8 @@ class POXCore (EventMixin):
     RereadConfiguration,
   ])
 
-  version = (0,7,0)
-  version_name = "gar"
+  version = (0,6,0)
+  version_name = "fangtooth"
 
   def __init__ (self, threaded_selecthub=True, epoll_selecthub=False,
                 handle_signals=True):
@@ -238,7 +238,7 @@ class POXCore (EventMixin):
 
   @property
   def banner (self):
-    return "{0} / Copyright 2011-2020 James McCauley, et al.".format(
+    return "{0} / Copyright 2011-2018 James McCauley, et al.".format(
      self.version_string)
 
   @property
@@ -393,19 +393,12 @@ class POXCore (EventMixin):
       vers = '.'.join(platform.python_version().split(".")[:2])
     except:
       vers = 'an unknown version'
-    def vwarn (*args):
+    if vers != "2.7":
       l = logging.getLogger("version")
       if not l.isEnabledFor(logging.WARNING):
         l.setLevel(logging.WARNING)
-      l.warn(*args)
-    good_versions = ("3.6", "3.7", "3.8", "3.9")
-    if vers not in good_versions:
-      vwarn("POX requires one of the following versions of Python: %s",
-             " ".join(good_versions))
-      vwarn("You're running Python %s.", vers)
-      vwarn("If you run into problems, try using a supported version.")
-    else:
-      vwarn("Support for Python 3 is experimental.")
+      l.warn("POX requires Python 2.7. You're running %s.", vers)
+      l.warn("If you run into problems, try using Python 2.7 or PyPy.")
 
     self.starting_up = False
     self.raiseEvent(GoingUpEvent())
@@ -512,7 +505,7 @@ class POXCore (EventMixin):
     if callback is None:
       callback = lambda:None
       callback.__name__ = "<None>"
-    if isinstance(components, str):
+    if isinstance(components, basestring):
       components = [components]
     elif isinstance(components, set):
       components = list(components)
@@ -524,12 +517,12 @@ class POXCore (EventMixin):
         components = [components]
     if name is None:
       #TODO: Use inspect here instead
-      name = getattr(callback, '__name__')
+      name = getattr(callback, 'func_name')
       if name is None:
         name = str(callback)
       else:
         name += "()"
-        if hasattr(callback, '__self__'):
+        if hasattr(callback, 'im_class'):
           name = getattr(callback.__self__.__class__,'__name__','')+'.'+name
       if hasattr(callback, '__module__'):
         # Is this a good idea?  If not here, we should do it in the
@@ -606,7 +599,7 @@ class POXCore (EventMixin):
     """
     if components is None:
       components = set()
-    elif isinstance(components, str):
+    elif isinstance(components, basestring):
       components = set([components])
     else:
       components = set(components)
@@ -620,7 +613,7 @@ class POXCore (EventMixin):
     if None in listen_args:
       # This means add it to all...
       args = listen_args.pop(None)
-      for k,v in args.items():
+      for k,v in args.iteritems():
         for c in components:
           if c not in listen_args:
             listen_args[c] = {}

@@ -22,6 +22,23 @@
 
 #TODO: Make runnable by itself (paths need adjusting, etc.).
 
+''''true
+export OPT="-u -O"
+export FLG=""
+if [ "$(basename $0)" = "debug-pox.py" ]; then
+  export OPT=""
+  export FLG="--debug"
+fi
+
+if [ -x pypy/bin/pypy ]; then
+  exec pypy/bin/pypy $OPT "$0" $FLG "$@"
+fi
+
+if type python2.7 > /dev/null; then
+  exec python2.7 $OPT "$0" $FLG "$@"
+fi
+exec python $OPT "$0" $FLG "$@"
+'''
 
 from __future__ import print_function
 
@@ -39,7 +56,7 @@ import pox.core
 core = None
 
 import pox.openflow
-from pox.lib.util import str_to_bool, first_of
+from pox.lib.util import str_to_bool
 
 # Function to run on main thread
 _main_thread_function = None
@@ -54,7 +71,6 @@ def _do_import (name):
   Try to import the named component.
   Returns its module name if it was loaded or False on failure.
   """
-  #TODO: Update to use the Python 3 import facilities
 
   def show_fail ():
     traceback.print_exc()
@@ -73,7 +89,7 @@ def _do_import (name):
     try:
       __import__(name, level=0)
       return name
-    except ModuleNotFoundError as exc:
+    except ImportError:
       # There are two cases why this might happen:
       # 1. The named module could not be found
       # 2. Some dependent module (import foo) or some dependent
@@ -85,12 +101,15 @@ def _do_import (name):
       # print a stack trace so that it can be fixed.
       # Sorting out the two cases is an ugly hack.
 
-      if exc.name and name.endswith(exc.name):
+      message = str(sys.exc_info()[1].args[0])
+      s = message.rsplit(" ", 1)
+
+      if s[0] == "No module named" and (name.endswith(s[1])):
         # It was the one we tried to import itself. (Case 1)
         # If we have other names to try, try them!
         return do_import2(base_name, names_to_try)
-      elif name.endswith(".py"):
-        print("Import by filename is not supported.")
+      elif message == "Import by filename is not supported.":
+        print(message)
         import os.path
         n = name.replace("/", ".").replace("\\", ".")
         n = n.replace( os.path.sep, ".")
@@ -195,7 +214,7 @@ def _do_launch (argv, skip_startup=False):
 
       if getattr(f, '_pox_eval_args', False):
         import ast
-        for k,v in list(params.items()):
+        for k,v in params.items():
           if isinstance(v, str):
             try:
               params[k] = ast.literal_eval(v)
@@ -253,7 +272,7 @@ def _do_launch (argv, skip_startup=False):
           code = f.__code__
           argcount = code.co_argcount
           argnames = code.co_varnames[:argcount]
-          defaults = list((f.__defaults__) or [])
+          defaults = list((f.func_defaults) or [])
           defaults = [EMPTY] * (argcount - len(defaults)) + defaults
           args = {}
           for n, a in enumerate(argnames):
@@ -285,15 +304,15 @@ def _do_launch (argv, skip_startup=False):
                                                 "Active"))
             print(" {0:25} {0:25} {0:25}".format("-" * 15))
 
-            for k,v in args.items():
+            for k,v in args.iteritems():
               print(" {0:25} {1:25} {2:25}".format(k,str(v[0]),
                     str(v[1] if v[1] is not EMPTY else v[0])))
 
           if len(params):
             print("This component does not have a parameter named "
-                  + "'{0}'.".format(first_of(params.keys())))
+                  + "'{0}'.".format(params.keys()[0]))
             return False
-          missing = [k for k,x in args.items()
+          missing = [k for k,x in args.iteritems()
                      if x[1] is EMPTY and x[0] is EMPTY]
           if len(missing):
             print("You must specify a value for the '{0}' "
@@ -304,7 +323,7 @@ def _do_launch (argv, skip_startup=False):
         else:
           # Error is inside the function
           raise
-    elif len(params) > 0 or launch != "launch":
+    elif len(params) > 0 or launch is not "launch":
       print("Module %s has no %s(), but it was specified or passed " \
             "arguments" % (name, launch))
       return False
@@ -335,7 +354,7 @@ class Options (object):
     return True
 
   def process_options (self, options):
-    for k,v in options.items():
+    for k,v in options.iteritems():
       if self.set(k, v) is False:
         # Bad option!
         sys.exit(1)

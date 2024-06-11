@@ -17,7 +17,7 @@
 import unittest
 import sys
 import os.path
-import socketserver
+import SocketServer
 import threading
 import socket
 import signal
@@ -28,13 +28,13 @@ sys.path.append(os.path.dirname(__file__) + "/../../..")
 
 from pox.lib.epoll_select import EpollSelect
 
-class TCPEcho(socketserver.StreamRequestHandler):
+class TCPEcho(SocketServer.StreamRequestHandler):
   def handle(self):
     data = self.rfile.readline()
-    print("got data: %s" % data)
+    print "got data: %s" % data
     self.wfile.write(data)
 
-class ForkingTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+class ForkingTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
   def start(self):
     self.pid = os.fork()
     if self.pid == 0:
@@ -45,7 +45,7 @@ class ForkingTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     os.kill(self.pid, signal.SIGKILL)
 
 def sort_fdlists(rl,wl,xl) :
-  key = lambda x: x.fileno() if hasattr(x, "fileno") else x
+  key = lambda(x): x.fileno() if hasattr(x, "fileno") else x
 
   return (
             sorted(rl, key=key),
@@ -76,7 +76,7 @@ class EpollSelectTest(unittest.TestCase):
     ret  = self.es.select([c], [c], [c], 0.1)
     self.assertEqual(([],[c],[]), ret)
     # send stuff
-    c.send(b"Hallo\n")
+    c.send("Hallo\n")
     # now we have something to read, right?
     ret  = self.es.select([c], [], [c], 0.5)
     self.assertEqual(([c],[],[]), ret)

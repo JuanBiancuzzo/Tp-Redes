@@ -28,21 +28,6 @@ import inspect
 import traceback
 import threading
 from pox.core import core
-import os
-base_path = __file__
-base_path = os.path.split(base_path)[0]
-base_path = os.path.split(base_path)[0]
-base_path += os.path.sep
-
-def fmt_tb (tb):
-  f = tb.filename
-  if f.startswith(base_path):
-    f = f[len(base_path):]
-  l = "%s:%i" % (f, tb.lineno)
-  code = tb.code_context
-  if code: code = code[0].strip()
-  if not code: code = "<Unknown>"
-  return "%20s: %s" % (l,code)
 
 def _trace_thread_proc ():
   try:
@@ -50,10 +35,10 @@ def _trace_thread_proc ():
       frames = sys._current_frames()
       for key in frames:
         frame = frames[key]
-        print(fmt_tb(inspect.getframeinfo(frame)))
+        print inspect.getframeinfo(frame)
         outer_frames = inspect.getouterframes(frame)
         for i in range(0, len(outer_frames)):
-          print("  " + fmt_tb(inspect.getframeinfo(outer_frames[i][0])))
+          print "     " + str(inspect.getframeinfo(outer_frames[i][0]))
 
       time.sleep(5)
   except:

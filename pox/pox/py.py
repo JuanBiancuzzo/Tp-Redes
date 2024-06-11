@@ -188,7 +188,7 @@ class Interactive (EventMixin):
       import readline
     except ImportError:
       pass
-    console.interact('Ready.', exitmsg='')
+    console.interact('Ready.')
 
     self.running = False
     core.quit()
@@ -199,7 +199,7 @@ def launch (disable = False, completion = None, history = False,
   if not core.hasComponent("Interactive"):
     Interactive()
 
-  from . import boot
+  import boot
   if not disable:
     boot.set_main_function(core.Interactive.interact)
   else:

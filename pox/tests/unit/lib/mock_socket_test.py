@@ -29,23 +29,23 @@ class MockSocketTest(unittest.TestCase):
 
   def test_simple_send(self):
     (a, b) = MockSocket.pair()
-    a.send(b"Hallo")
-    self.assertEquals(b.recv(), b"Hallo")
-    b.send(b"Servus")
-    self.assertEquals(a.recv(), b"Servus")
+    a.send("Hallo")
+    self.assertEquals(b.recv(), "Hallo")
+    b.send("Servus")
+    self.assertEquals(a.recv(), "Servus")
 
   def test_ready_to_recv(self):
     (a, b) = MockSocket.pair()
-    a.send(b"Hallo")
+    a.send("Hallo")
     self.assertFalse(a.ready_to_recv())
     self.assertTrue(b.ready_to_recv())
-    self.assertEquals(b.recv(), b"Hallo")
+    self.assertEquals(b.recv(), "Hallo")
     self.assertFalse(b.ready_to_recv())
 
     self.assertFalse(a.ready_to_recv())
-    b.send(b"Servus")
+    b.send("Servus")
     self.assertTrue(a.ready_to_recv())
-    self.assertEquals(a.recv(), b"Servus")
+    self.assertEquals(a.recv(), "Servus")
     self.assertFalse(a.ready_to_recv())
 
   def test_on_ready_to_recv(self):
@@ -58,12 +58,12 @@ class MockSocketTest(unittest.TestCase):
     (a, b) = MockSocket.pair()
     b.set_on_ready_to_recv(ready)
     self.assertEquals(self.called, 0)
-    a.send(b"Hallo")
+    a.send("Hallo")
     self.assertEquals(self.called, 1)
     self.assertEquals(self.seen_size, 5)
 
     # check that it doesn't get called on the other sockets data
-    b.send(b"Huhu")
+    b.send("Huhu")
     self.assertEquals(self.called, 1)
 
   def test_empty_recv(self):
@@ -72,7 +72,7 @@ class MockSocketTest(unittest.TestCase):
        test documents it as intended for now, though
     """
     (a, b) = MockSocket.pair()
-    self.assertEquals(a.recv(), b'')
+    self.assertEquals(a.recv(), "")
 
 if __name__ == '__main__':
   unittest.main()

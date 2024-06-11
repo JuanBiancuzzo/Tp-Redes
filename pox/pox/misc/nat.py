@@ -119,7 +119,7 @@ class NAT (object):
 
   def _expire (self):
     dead = []
-    for r in self._record_by_outgoing.values():
+    for r in self._record_by_outgoing.itervalues():
       if r.expired:
         dead.append(r)
 

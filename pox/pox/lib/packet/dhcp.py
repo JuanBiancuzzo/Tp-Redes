@@ -55,9 +55,9 @@
 #======================================================================
 import struct
 import string
-from .packet_utils import *
+from packet_utils import *
 
-from .packet_base import packet_base
+from packet_base import packet_base
 import pox.lib.util as util
 from pox.lib.util import is_subclass
 from pox.lib.addresses import *
@@ -277,7 +277,7 @@ class dhcp(packet_base):
                 o += chr(dhcp.PAD_OPT)
             return o
 
-        for k,v in self.options.items():
+        for k,v in self.options.iteritems():
             if k == dhcp.END_OPT: continue
             if k == dhcp.PAD_OPT: continue
             if isinstance(v, DHCPOption):
@@ -428,7 +428,7 @@ class DHCPIPsOptionBase (DHCPOption):
   Superclass for options which are a list of IP addresses
   """
   def __init__ (self, addrs=[]):
-    if isinstance(addrs, (str,bytes,IPAddr)):
+    if isinstance(addrs, (basestring,IPAddr)):
       self.addrs = [IPAddr(addrs)]
     else:
       self.addrs = [IPAddr(a) for a in addrs]
@@ -600,7 +600,7 @@ class DHCPParameterRequestOption (DHCPOption):
       if n is None or not hasattr(n, 'im_self'):
         n = "Opt/" + str(o)
       else:
-        n = n.__self__.__name__
+        n = n.im_self.__name__
         if n.startswith("DHCP"): n = n[4:]
         if n.endswith("Option"): n = n[:-6]
         if n == "": n = "Opt"
