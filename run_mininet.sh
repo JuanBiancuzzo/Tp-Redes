@@ -1,3 +1,3 @@
 #!/bin/sh
 
-mn --custom mininet_topology.py --topo redesTopo --mac --arp --switch ovsk --controller remote
+mn --custom mininet_topology.py --topo redesTopo --mac --arp --switch ovsk --controller remote 

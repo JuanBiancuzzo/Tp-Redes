@@ -3,6 +3,7 @@
     "firewallSwitch": 1,
     "reglas": [
         {
+            "ipProtocolo": "ipv4",
             "puertoDestino": 80
         },
         {
@@ -11,12 +12,12 @@
             "protocolo": "UDP"
         },
         {
-            "ipOrigen": "10.0.0.2",
+            "ipOrigen": "10.0.0.4",
             "ipDestino": "10.0.0.1"
         },
         {
             "ipOrigen": "10.0.0.1",
-            "ipDestino": "10.0.0.2"
+            "ipDestino": "10.0.0.4"
         }
     ]
 }

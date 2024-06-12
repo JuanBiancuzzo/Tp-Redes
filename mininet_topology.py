@@ -23,6 +23,8 @@ class RedesTopo(Topo):
         # Agregamos hosts
         cliente1 = self.addHost('cliente1')
         cliente2 = self.addHost('cliente2')
+        cliente3 = self.addHost('cliente3')
+        cliente4 = self.addHost('cliente4')
 
         # Agregamos switches
         switches = []
@@ -39,7 +41,9 @@ class RedesTopo(Topo):
             self.addLink(switches[i], switches[i + 1], cls=TCLink)
 
         self.addLink(cliente1, switches[0])
-        self.addLink(cliente2, switches[-1])
+        self.addLink(cliente2, switches[0])
+        self.addLink(cliente3, switches[-1])
+        self.addLink(cliente4, switches[-1])
 
 
 topos = {'redesTopo': (lambda: RedesTopo())}

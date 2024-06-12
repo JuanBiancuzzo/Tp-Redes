@@ -28,19 +28,47 @@ class Firewall(EventMixin):
         if event.dpid == int(self.parametros["firewallSwitch"]):
             for regla in self.parametros["reglas"]:
                 Firewall.crearRegla(event.connection, regla)
-                break
 
     def _handle_ConnectionDown(self, event):
         self.dirty = True
 
     @classmethod
     def crearRegla(cls, connection, regla):
-        msg = of.ofp_flow_mod()
-        msg.match.dl_type = pkt.ethernet.IP_TYPE
-        msg.match.nw_src = IPAddr("10.0.0.1")
-        connection.send(msg)
 
-        print(msg)
+        reglaKeys = regla.keys()
+        protocolos = [
+            pkt.ipv4.UDP_PROTOCOL,
+            pkt.ipv4.TCP_PROTOCOL
+        ]
+
+        if "protocolo" in reglaKeys:
+            if regla["protocolo"] == "UDP":
+                protocolos = [ pkt.ipv4.UDP_PROTOCOL ]
+            else:
+                protocolos = [ pkt.ipv4.TCP_PROTOCOL ]
+
+        for protocolo in protocolos:
+
+            msg = of.ofp_flow_mod()
+
+            msg.match.dl_type = pkt.ethernet.IP_TYPE
+            if "ipProtocolo" in reglaKeys and regla["ipProtocolo"] == "ipv6":
+                msg.match.dl_type = pkt.ethernet.IPV6_TYPE
+
+            if "puertoDestino" in reglaKeys:
+                msg.match.tp_dst = regla["puertoDestino"]
+            if "puertoOrigen" in reglaKeys:
+                msg.match.tp_src = regla["puertoOrigen"]
+
+            if "ipOrigen" in reglaKeys:
+                msg.match.nw_src = IPAddr(regla["ipOrigen"])
+            if "ipDestino" in reglaKeys:
+                msg.match.nw_dst = IPAddr(regla["ipDestino"])
+
+            msg.match.nw_proto = protocolo
+            connection.send(msg)
+
+            print(msg)
 
     @classmethod
     def settearParametros(cls, pathArchivo):
